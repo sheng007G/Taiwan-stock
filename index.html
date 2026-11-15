@@ -75,6 +75,9 @@ h2 small{font-weight:400;color:var(--mute);font-size:12px}
 .watch .row{display:flex;gap:8px;margin-top:10px}
 .watch input{min-width:0;font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff}
 .watch button.add{appearance:none;border:none;background:var(--ink);color:#fff;font:inherit;font-weight:700;padding:0 16px;border-radius:12px;cursor:pointer;white-space:nowrap}
+.auto-ok{margin-top:14px;background:#e9f6ef;color:#0f6b43;border-radius:12px;padding:10px 12px;font-size:14px;font-weight:700}
+.fix{margin-top:10px}
+.fix summary{font-size:13px;color:var(--mute);cursor:pointer;padding:4px 0}
 .legend{font-size:12.5px;color:var(--ink2);display:flex;flex-wrap:wrap;gap:6px 12px;margin:4px 4px 0}
 .fill-card{background:#fffaf0;border:1.5px dashed #e3c98f;border-radius:var(--r);padding:14px;margin-bottom:10px}
 .fill-card h4{margin:0 0 2px;font-size:16px}
@@ -348,9 +351,11 @@ function open(idx){
   <div class="why">${i.why}</div>
   <div class="rule"><b>燈號規則</b><ul style="padding-left:18px;margin:4px 0">${i.rule.map(r=>`<li>${r}</li>`).join('')}</ul></div>
   ${i.id==='mood'?partsTable(v):''}
-  ${i.fields.length?`<div style="margin-top:14px;font-weight:700;font-size:15px">手動輸入</div><div style="font-size:12.5px;color:var(--mute)">${i.id==='fg'?'這個指標要自己填。':'會自動更新；手動輸入的數字在下次自動更新後會被取代。'}</div>`:''}
-  ${i.fields.map(([k,l])=>`<label>${l}</label><input data-k="${k}" ${k==='note'?'type="text"':'type="number" step="any" inputmode="decimal"'} value="${v[k]==null?'':v[k]}">`).join('')}
-  <div class="btns">${i.fields.length?'<button class="btn" id="save">儲存</button>':''}${saved[i.id]?'<button class="btn ghost" id="undo">改回自動</button>':''}<button class="btn ghost" id="cls">關閉</button></div>
+  ${(()=>{if(!i.fields.length)return '';
+    const inputs=i.fields.map(([k,l])=>`<label>${l}</label><input data-k="${k}" ${k==='note'?'type="text"':'type="number" step="any" inputmode="decimal"'} value="${v[k]==null?'':v[k]}">`).join('');
+    if(i.id==='fg')return `<div style="margin-top:14px;font-weight:700;font-size:15px">手動輸入</div><div style="font-size:12.5px;color:var(--mute)">這個指標要自己填，也可以用「情緒」區的每週填寫卡片。</div>${inputs}<div class="btns"><button class="btn" id="save">儲存</button></div>`;
+    return `<div class="auto-ok">✅ 這個指標每個交易日自動更新，不用手動輸入。</div><details class="fix"${overrideOn(i)?' open':''}><summary>資料看起來不對？手動修正（通常不用）</summary><div style="font-size:12.5px;color:var(--mute);margin-top:6px">手動輸入的數字在下次自動更新後會被取代。</div>${inputs}<div class="btns"><button class="btn" id="save">儲存修正</button></div></details>`;})()}
+  <div class="btns">${saved[i.id]&&i.id!=='fg'?'<button class="btn ghost" id="undo">改回自動</button>':''}<button class="btn ghost" id="cls">關閉</button></div>
   ${i.chart?`<a class="chartbtn" style="margin:12px 0 0;padding:8px 14px;font-size:14px" href="${i.chart}" target="_blank" rel="noopener">📈 打開即時分時圖（Yahoo 股市）↗</a>`:''}
   <div class="src">資料日期：${dateOf(i)}・來源：${i.src[0]}・<a href="${i.src[1]}" target="_blank" rel="noopener">去查最新數字 ↗</a></div>`;
   sheet.classList.add('on');scrim.classList.add('on');sheet.scrollTop=0;
