@@ -117,6 +117,22 @@ h2 small{font-weight:400;color:var(--mute);font-size:12px}
 .kv span{display:block;font-size:12px;color:var(--mute)}
 .kv b{font-size:16px;font-variant-numeric:tabular-nums}
 .kv em{display:block;font-style:normal;font-size:12px;font-weight:700;margin-top:1px}
+.ib{appearance:none;border:none;background:#e7eef6;color:var(--accent);width:20px;height:20px;border-radius:50%;font:700 12px/20px "Noto Sans TC",sans-serif;padding:0;margin-left:4px;cursor:pointer;vertical-align:1px;text-align:center}
+.ib.big{width:auto;height:auto;border-radius:20px;padding:3px 10px;font-size:12.5px;line-height:1.4;margin:6px 0 0 6px}
+.pop-scrim{position:fixed;inset:0;background:#0006;z-index:30;display:none;align-items:center;justify-content:center;padding:24px}
+.pop-scrim.on{display:flex}
+.pop{background:#fff;border-radius:18px;max-width:420px;width:100%;max-height:72vh;overflow:auto;padding:16px 18px 18px;box-shadow:0 10px 40px #0004;animation:popin .18s ease}
+@keyframes popin{from{transform:scale(.96);opacity:0}to{transform:none;opacity:1}}
+.pop-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pop-h b{font-size:18px}
+.pop-x{appearance:none;border:none;background:#f3f1ec;width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;flex:none}
+.pop .concl{background:var(--ink);color:#fff;border-radius:12px;padding:10px 12px;margin:10px 0;font-size:14.5px;font-weight:700}
+.pop h5{margin:12px 0 4px;font-size:14px;color:var(--ink2)}
+.pop p,.pop li{font-size:14.5px;margin:4px 0}
+.pop ul{padding-left:18px;margin:4px 0}
+.pop table{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0}
+.pop td,.pop th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left;vertical-align:top}
+.pop th{color:var(--mute);font-weight:500;font-size:12px}
 .legend{font-size:12.5px;color:var(--ink2);display:flex;flex-wrap:wrap;gap:6px 12px;margin:4px 4px 0}
 .fill-card{background:#fffaf0;border:1.5px dashed #e3c98f;border-radius:var(--r);padding:14px;margin-bottom:10px}
 .fill-card h4{margin:0 0 2px;font-size:16px}
@@ -174,7 +190,7 @@ h2 small{font-weight:400;color:var(--mute);font-size:12px}
 </div><!-- /tab-market -->
 
 <div id="tab-me" hidden>
-  <h2>📅 重要日程<small>未來 45 天</small></h2>
+  <h2>📅 重要日程<small>未來 45 天</small><button class="ib" data-info="cal" aria-label="說明">i</button></h2>
   <div class="card" id="cal"></div>
   <h2>⭐ 我的自選股<small>搜尋代號或名稱加入</small></h2>
   <div class="watch" id="watch"></div>
@@ -187,6 +203,7 @@ h2 small{font-weight:400;color:var(--mute);font-size:12px}
 
 </div>
 
+<div class="pop-scrim" id="popScrim"><div class="pop" id="pop" role="dialog" aria-modal="true"></div></div>
 <div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet"></div>
 
@@ -351,6 +368,42 @@ const getWatch=()=>store.get('twdash-watch',[{c:'0050',n:'元大台灣50'},{c:'2
 const getHold=()=>store.get('twdash-hold',[]);
 const myCodes=()=>[...new Set([...getHold().map(h=>h.c),...getWatch().map(w=>w.c)])];
 const esc=t=>String(t).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+/* ===== ⓘ 說明小視窗 ===== */
+const INFO={
+ rev:{t:'月營收年增率',c:'這個月賣的錢比去年同月多還是少，是最快看出公司有沒有在成長的數字。',
+  b:`<h5>怎麼看</h5><ul><li><b>連續幾個月都正成長</b>比單月暴增更重要</li><li>年增 10% 以上算成長明顯；負成長要找原因</li><li>每月 10 日前公布上個月的營收</li></ul><h5>注意</h5><p>營收成長不等於賺錢，還要看毛利率和 EPS。</p>`},
+ cumrev:{t:'今年累計營收年增',c:'把今年到目前每個月的營收加起來，跟去年同期比。',
+  b:`<h5>為什麼要看累計</h5><p>單月營收會受工作天數、出貨時間影響忽高忽低；累計數字比較能看出全年趨勢。</p>`},
+ pe:{t:'本益比（PE）',c:'股價 ÷ 每股盈餘（EPS），代表用現在的價格買，大約幾年能「賺回」股價。',
+  b:`<h5>怎麼看</h5><ul><li>數字越低越便宜，但要<b>跟同產業、跟自己過去比</b></li><li>成長快的公司（如 AI、半導體）本益比通常比較高</li><li>這裡的參考：12 倍以下偏低、25 倍以上偏高</li></ul><h5>注意</h5><p>獲利突然衰退時，本益比會「看起來」變高；景氣循環股在獲利高峰時本益比反而低。</p>`},
+ pb:{t:'股價淨值比（PB）',c:'股價 ÷ 每股淨值。金融股看 PB 比看本益比準。',
+  b:`<h5>為什麼金融股看 PB</h5><p>金融業的資產主要是錢和債券，帳上淨值很接近真實價值，所以用淨值來估價比較準。</p><h5>怎麼看</h5><ul><li>這裡會跟<b>所有金融股的中位數</b>比，告訴你比同業貴還是便宜</li><li>更好的做法：跟這家公司<b>自己過去幾年的 PB</b> 比，在歷史低檔附近相對便宜</li><li>PB 小於 1 代表股價低於淨值</li></ul>`},
+ yield:{t:'殖利率（近一年配息）',c:'過去一年領到的現金股利 ÷ 現在股價，類似存款利率的概念。',
+  b:`<h5>怎麼看</h5><ul><li>看<b>是不是連續多年穩定配息</b>，不要只看單一年特別高</li><li>股價大跌時殖利率會「看起來」變高，要小心</li><li>配息之後要能<b>填息</b>（股價漲回除息前）才是真的賺到</li></ul><h5>這裡怎麼算</h5><p>用證交所近 365 天的除息紀錄加總；上櫃股票改用官方公布的殖利率。</p>`},
+ exdiv:{t:'除息日',c:'想領到這次股利，最晚要在除息日的「前一個交易日」買進。',
+  b:`<h5>除息當天會發生什麼</h5><ul><li>股價會先扣掉股利金額（例如配 1 元，參考價就少 1 元）</li><li>股利大約 3～5 週後匯進你的交割戶</li><li>領到股利要繳二代健保補充保費（單次 2 萬元以上）並併入所得稅</li></ul><h5>新手提醒</h5><p>不需要為了領息特地在除息前買，配息本身不是賺錢，填息才是。</p>`},
+ prem:{t:'ETF 折溢價',c:'ETF 市價跟它實際價值（淨值）的差距。溢價＝買貴了，折價＝買便宜了。',
+  b:`<h5>怎麼看</h5><ul><li><b>±1% 以內</b>：正常，可以買</li><li><b>溢價超過 1%</b>：先別追，等溢價縮小再買</li><li>熱門新 ETF、海外 ETF 比較容易出現大幅溢價</li></ul><h5>資料來源</h5><p>證交所公布的「估計淨值」，收盤後為當天最後一筆。盤中可在券商 App 看即時折溢價。</p>`},
+ fin:{t:'金融股怎麼看',c:'金融股不看月營收。新手先看三個數字：股價淨值比（PB）、每月自結獲利（EPS）、殖利率。',
+  b:`<h5>新手先看這 3 個</h5><table><tr><th>指標</th><th>怎麼看</th></tr><tr><td><b>PB</b></td><td>跟同業比、跟自己過去幾年比</td></tr><tr><td><b>每月自結 EPS</b></td><td>金控每月公布上月賺多少，看累計是否比去年高</td></tr><tr><td><b>殖利率</b></td><td>看是否多年穩定配息</td></tr></table>
+  <h5>想再深入再看</h5><ul><li><b>ROE</b>：賺錢效率，銀行 8～12% 算不錯</li><li><b>逾放比</b>：借出去收不回的比例，越低越好</li><li><b>備抵呆帳覆蓋率</b>：應付呆帳的準備，越高越安全</li><li><b>資本適足率</b>：銀行的安全氣囊</li></ul>
+  <h5>不同類型，影響因素不同</h5><ul><li><b>銀行為主</b>（兆豐金、玉山金）：升息通常有利，降息不利</li><li><b>壽險為主</b>（國泰金、富邦金）：受股債市和匯率影響大，台幣升值不利</li><li><b>證券為主</b>（元大金）：跟台股成交量連動</li></ul>`},
+ etf:{t:'ETF 怎麼看',c:'ETF 是一籃子股票，沒有營收。看三件事：折溢價、殖利率、除息日。',
+  b:`<ul><li><b>折溢價</b>：避免買貴</li><li><b>殖利率</b>：配息型 ETF 的收益，要搭配填息狀況看</li><li><b>除息日</b>：想領這次配息要在前一個交易日前買</li></ul><h5>另外也要注意</h5><ul><li><b>內扣費用</b>：每年自動從資產扣，越低越好</li><li><b>規模和成交量</b>：太小可能買賣不順</li><li><b>追蹤什麼指數</b>：知道自己買的是什麼</li></ul>`},
+ pl:{t:'未實現損益',c:'如果用最近收盤價全部賣掉，大約賺或賠多少。還沒賣就還沒實現。',
+  b:`<h5>這裡怎麼算</h5><ul><li><b>未實現損益</b>＝（現價 − 你的成本）× 股數</li><li><b>扣手續費和證交稅</b>：再扣掉賣出時的手續費 0.1425% 和證交稅（股票 0.3%、ETF 0.1%），比較接近真的賣掉拿到的</li><li>現價是最近一個交易日的收盤價，不是盤中即時價</li></ul><h5>小提醒</h5><p>成本建議填券商 App 庫存頁的「平均成本（含手續費）」，算出來最準。</p>`},
+ cal:{t:'重要日程',c:'把會影響股價的固定日子列出來，事先知道就不會被嚇到。',
+  b:`<ul><li><b>營收</b>：每月 10 日前公布上個月營收</li><li><b>財報</b>：Q1 5/15、Q2 8/14、Q3 11/14、全年 3/31 前</li><li><b>我的</b>：你的自選股和持股的除息日（目前涵蓋上市股票和 ETF）</li></ul><p>3 天內有日程時，「市場」分頁最上面會出現黃色提醒條。</p>`}
+};
+const ib=(k,label)=>INFO[k]?`<button class="ib${label?' big':''}" data-info="${k}" aria-label="說明">${label||'i'}</button>`:'';
+const infoKeyOf=a=>/折溢價/.test(a)?'prem':/PB/.test(a)?'pb':/累計/.test(a)?'cumrev':/營收/.test(a)?'rev':/本益比/.test(a)?'pe':/殖利率/.test(a)?'yield':/除息/.test(a)?'exdiv':'';
+function showInfo(k){const x=INFO[k];if(!x)return;const p=document.getElementById('pop');
+  p.innerHTML=`<div class="pop-h"><b>${x.t}</b><button class="pop-x" aria-label="關閉">✕</button></div><div class="concl">${x.c}</div>${x.b}`;
+  document.getElementById('popScrim').classList.add('on');p.scrollTop=0;p.querySelector('.pop-x').onclick=hideInfo;}
+function hideInfo(){document.getElementById('popScrim').classList.remove('on')}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-info]');if(b){e.preventDefault();e.stopPropagation();showInfo(b.dataset.info);return}
+  if(e.target.id==='popScrim')hideInfo();},true);
+
 const tpeToday=()=>new Date(Date.now()+8*3600e3).toISOString().slice(0,10);
 const pctTxt=(v,dp=1)=>v==null||isNaN(v)?'—':`${v>0?'▲ +':v<0?'▼ ':''}${fmt(v,dp)}%`;
 
@@ -393,7 +446,7 @@ function renderHold(){
       <div class="h-sub"><span>市值 ${fmt(mv,0)}・扣賣出成本約 ${fmt(pl-sellCost,0)}</span><button class="h-x" data-k="${k}">移除</button></div></div>`;
   }).join('');
   const tpl=tv-tc;
-  box.innerHTML=(list.length?`<div class="h-total"><div class="small">未實現損益（現價 − 成本）</div><div class="big ${cls(tpl)}">${tpl>=0?'+':''}${fmt(tpl,0)} 元 <span style="font-size:15px">${tc?pctTxt(tpl/tc*100,2):''}</span></div>
+  box.innerHTML=(list.length?`<div class="h-total"><div class="small">未實現損益（現價 − 成本）${ib('pl')}</div><div class="big ${cls(tpl)}">${tpl>=0?'+':''}${fmt(tpl,0)} 元 <span style="font-size:15px">${tc?pctTxt(tpl/tc*100,2):''}</span></div>
      <div class="small">總成本 ${fmt(tc,0)}・總市值 ${fmt(tv,0)}・扣手續費和證交稅約 ${tn>=0?'+':''}${fmt(tn,0)}</div></div>${rows}`:'<div class="small">還沒有持股。輸入代號、股數和每股平均成本就能自動算損益。</div>')+
    `<div class="form3"><input id="hC" placeholder="代號"><input id="hS" type="number" inputmode="numeric" placeholder="股數"><input id="hP" type="number" inputmode="decimal" step="any" placeholder="成本/股"><button id="hAdd">加入</button></div><div id="hSugg"></div>
    <div class="small" style="margin-top:6px">1 張 = 1000 股。成本建議填含手續費的平均價（券商 App 庫存頁有）。同一檔再加入會自動合併、重算平均成本。現價用最近一個交易日收盤價。</div>`;
@@ -433,12 +486,11 @@ function renderCards(){
       else k.push(['月營收','—',['n','查無資料']]);
       if(val&&val[0]!=null)k.push(['本益比',fmt(val[0],1)+' 倍',['n',val[0]>25?'偏高（較貴）':val[0]<12?'偏低（較便宜）':'中等']]);
     }
-    k.push(['殖利率（近一年配息）',yld!=null?fmt(yld,2)+'%':'—',['n',dv?`近一年配 ${dv.n} 次、共 ${fmt(dv.sum,2)} 元`:'沒有配息紀錄']]);
+    k.push(['殖利率（近一年）',yld!=null?fmt(yld,2)+'%':'—',['n',dv?`近一年配 ${dv.n} 次、共 ${fmt(dv.sum,2)} 元`:'沒有配息紀錄']]);
     k.push(['下次除息',ex?ex.d.slice(5).replace('-','/'):'未公告',['n',ex?(ex.cash?`每股配 ${fmt(ex.cash,ex.cash<1?3:2)} 元`:ex.t):'有公告會顯示在這裡']]);
-    return `<div class="sc"><div class="sc-h"><span><b>${c}</b><small>${esc(nameOf(c))}${etf?'・ETF':/^28/.test(c)?'・金融股':''}</small><br><a class="chartbtn" style="margin:6px 0 0" href="${yq(c)}" target="_blank" rel="noopener">📈 分時圖</a></span>
+    return `<div class="sc"><div class="sc-h"><span><b>${c}</b><small>${esc(nameOf(c))}${etf?'・ETF':/^28/.test(c)?'・金融股':''}</small><br><a class="chartbtn" style="margin:6px 0 0" href="${yq(c)}" target="_blank" rel="noopener">📈 分時圖</a>${etf?ib('etf','ⓘ ETF 怎麼看'):/^28/.test(c)?ib('fin','ⓘ 金融股怎麼看'):''}</span>
       <span class="sc-px">${px!=null?fmt(px):'—'}<small class="${cls(ch)}">${ch!=null?(ch>0?'▲ +':ch<0?'▼ ':'')+fmt(ch):''}</small></span></div>
-      ${/^28/.test(c)?'<div class="small" style="margin-top:8px">金融股看 PB 和殖利率。PB 先跟同業比，最好再跟這家公司自己過去幾年比。</div>':''}
-      <div class="kv">${k.map(([a,b,[cc,t]])=>`<div><span>${a}</span><b>${b}</b><em class="${cc==='warn'?'':cc}" ${cc==='warn'?'style="color:var(--warn)"':''}>${t}</em></div>`).join('')}</div></div>`;
+      <div class="kv">${k.map(([a,b,[cc,t]])=>`<div><span>${a}${ib(infoKeyOf(a))}</span><b>${b}</b><em class="${cc==='warn'?'':cc}" ${cc==='warn'?'style="color:var(--warn)"':''}>${t}</em></div>`).join('')}</div></div>`;
   }).join('');
 }
 
