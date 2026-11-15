@@ -78,6 +78,45 @@ h2 small{font-weight:400;color:var(--mute);font-size:12px}
 .auto-ok{margin-top:14px;background:#e9f6ef;color:#0f6b43;border-radius:12px;padding:10px 12px;font-size:14px;font-weight:700}
 .fix{margin-top:10px}
 .fix summary{font-size:13px;color:var(--mute);cursor:pointer;padding:4px 0}
+.tabs{display:flex;gap:6px;background:#ebe7de;border-radius:14px;padding:4px;margin:12px 0 4px;position:sticky;top:calc(env(safe-area-inset-top) + 6px);z-index:5}
+.tabs a{flex:1;text-align:center;padding:9px 0;border-radius:11px;text-decoration:none;color:var(--ink2);font-weight:700;font-size:15px}
+.tabs a.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px #0001}
+.soon{display:block;background:var(--warnbg);color:var(--warn);border-radius:12px;padding:10px 12px;margin:10px 0 0;font-size:14px;text-decoration:none;font-weight:700}
+.cal-row{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.cal-row:last-child{border-bottom:none}
+.cal-d{flex:none;width:54px;text-align:center;border-radius:10px;background:#f3f1ec;padding:4px 0;font-weight:900;font-size:15px;line-height:1.2}
+.cal-d small{display:block;font-size:11px;font-weight:500;color:var(--mute)}
+.cal-d.near{background:var(--warnbg);color:var(--warn)}
+.cal-t{flex:1;font-size:14.5px}
+.cal-t small{display:block;color:var(--mute);font-size:12.5px}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:0 6px;margin-right:4px;vertical-align:1px}
+.tag.mine{background:#e7eef6;color:var(--accent)}.tag.rev{background:#efede7;color:var(--ink2)}.tag.fin{background:#efede7;color:var(--ink2)}
+.sugg{display:flex;flex-direction:column;margin-top:6px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.sugg button{appearance:none;border:none;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px 12px;font:inherit;font-size:14.5px;cursor:pointer;color:var(--ink)}
+.sugg button:last-child{border-bottom:none}
+.sugg button small{color:var(--mute);margin-left:6px}
+.h-row{padding:10px 0;border-bottom:1px solid var(--line)}
+.h-row:last-of-type{border-bottom:none}
+.h-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.h-top b{font-size:16px}.h-top small{color:var(--mute)}
+.h-pl{font-weight:900;font-size:17px;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.h-sub{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mute);margin-top:2px;gap:8px}
+.h-x{border:none;background:none;color:var(--mute);font-size:13px;cursor:pointer;padding:0 0 0 6px;text-decoration:underline}
+.h-total{background:#f7f5f0;border-radius:12px;padding:12px;margin-bottom:6px}
+.h-total .big{font-size:24px;font-weight:900;font-variant-numeric:tabular-nums}
+.form3{display:grid;grid-template-columns:1.1fr 1fr 1fr auto;gap:6px;margin-top:12px}
+.form3 input{min-width:0;font:inherit;font-size:15px;padding:10px 8px;border:1.5px solid var(--line);border-radius:12px;background:#fff}
+.form3 button{appearance:none;border:none;background:var(--ink);color:#fff;font:inherit;font-weight:700;padding:0 12px;border-radius:12px;cursor:pointer}
+.sc{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:10px 0}
+.sc-h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.sc-h b{font-size:17px}.sc-h small{color:var(--mute);margin-left:4px}
+.sc-px{text-align:right;font-weight:900;font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sc-px small{display:block;font-size:12.5px;font-weight:700}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.kv div{background:#f7f5f0;border-radius:10px;padding:8px 10px}
+.kv span{display:block;font-size:12px;color:var(--mute)}
+.kv b{font-size:16px;font-variant-numeric:tabular-nums}
+.kv em{display:block;font-style:normal;font-size:12px;font-weight:700;margin-top:1px}
 .legend{font-size:12.5px;color:var(--ink2);display:flex;flex-wrap:wrap;gap:6px 12px;margin:4px 4px 0}
 .fill-card{background:#fffaf0;border:1.5px dashed #e3c98f;border-radius:var(--r);padding:14px;margin-bottom:10px}
 .fill-card h4{margin:0 0 2px;font-size:16px}
@@ -105,6 +144,10 @@ h2 small{font-weight:400;color:var(--mute);font-size:12px}
   <div class="asof" id="asof">資料截至 2026/11/13（五）收盤・點任一卡片看解讀或更新數字</div>
 </header>
 
+<nav class="tabs"><a href="#market" data-tab="market" class="on">📊 市場</a><a href="#me" data-tab="me">⭐ 我的</a></nav>
+
+<div id="tab-market">
+<div id="soon"></div>
 <div class="hero">
   <div class="lbl">先講結論</div>
   <div class="txt" id="heroTxt"></div>
@@ -115,8 +158,6 @@ h2 small{font-weight:400;color:var(--mute);font-size:12px}
   <span><b class="u">▲ 偏多</b> 對台股有利</span><span><b class="d">▼ 偏空</b> 對台股不利</span><span><b class="n">● 中性</b></span><span><b style="color:var(--warn)">⚠ 警戒</b> 過熱或風險高</span>
 </div>
 
-<h2>我的自選股<small>點一下看即時分時圖（Yahoo 股市）</small></h2>
-<div class="watch" id="watch"></div>
 <div id="sections"></div>
 
 <h2>去哪裡更新數字</h2>
@@ -130,6 +171,20 @@ h2 small{font-weight:400;color:var(--mute);font-size:12px}
 </div>
 <button class="resetall" id="resetAll">清除我手動輸入的數字</button>
 <p class="foot" id="foot">自動更新：證交所（加權指數、成交金額、三大法人、融資、台積電）＋ Yahoo Finance（櫃買、費半、台積電 ADR、匯率）。＋期交所（台指 VIX）；融資維持率與台股情緒分數由 App 自己計算。<br>MM 恐懼與貪婪指數需每週手動填寫。<br>燈號是簡化規則，只供學習參考，不構成投資建議。</p>
+</div><!-- /tab-market -->
+
+<div id="tab-me" hidden>
+  <h2>📅 重要日程<small>未來 45 天</small></h2>
+  <div class="card" id="cal"></div>
+  <h2>⭐ 我的自選股<small>搜尋代號或名稱加入</small></h2>
+  <div class="watch" id="watch"></div>
+  <h2>💰 我的持股與損益<small>只存在這支手機</small></h2>
+  <div class="card" id="hold"></div>
+  <h2>🔍 個股體檢<small>自選股＋持股</small></h2>
+  <div id="cards"></div>
+  <p class="foot">個股資料：證交所、櫃買中心（收盤價、月營收、本益比、殖利率、除權息）；ETF 折溢價為證交所估計淨值。<br>持股和自選股只存在你的手機，不會上傳。只供學習參考，不構成投資建議。</p>
+</div>
+
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -286,22 +341,128 @@ function partsTable(v){
   return `<div style="font-weight:700;font-size:15px;margin-top:6px">這次怎麼算出來的</div><table class="parts">${v.parts.map(p=>`<tr><td style="width:34%"><b>${p.name}</b></td><td>${p.raw}<div class="bar"><i style="width:${p.score}%"></i></div></td><td style="width:44px;text-align:right;font-weight:700">${p.score}</td></tr>`).join('')}</table>`;
 }
 
-/* ===== 自選股：點了開 Yahoo 股市分時圖 ===== */
+/* ===== 「我的」分頁：自選股、持股、個股體檢、重要日程 ===== */
+let STK=null; // stocks.json
+const isETF=c=>/^00/.test(c);
+const nameOf=c=>(STK&&STK.prices[c]&&STK.prices[c][2])||'';
+const priceOf=c=>STK&&STK.prices[c]?STK.prices[c][0]:null;
+const yq=c=>'https://tw.stock.yahoo.com/quote/'+encodeURIComponent(c);
+const getWatch=()=>store.get('twdash-watch',[{c:'0050',n:'元大台灣50'},{c:'2330',n:'台積電'}]);
+const getHold=()=>store.get('twdash-hold',[]);
+const myCodes=()=>[...new Set([...getHold().map(h=>h.c),...getWatch().map(w=>w.c)])];
+const esc=t=>String(t).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const tpeToday=()=>new Date(Date.now()+8*3600e3).toISOString().slice(0,10);
+const pctTxt=(v,dp=1)=>v==null||isNaN(v)?'—':`${v>0?'▲ +':v<0?'▼ ':''}${fmt(v,dp)}%`;
+
+function search(q){
+  if(!STK||!q)return [];
+  q=q.trim().toUpperCase();const out=[];
+  for(const [c,p] of Object.entries(STK.prices)){
+    const n=(p[2]||'').toUpperCase();
+    const r=c===q?0:c.startsWith(q)?1:n.startsWith(q)?2:n.includes(q)?3:-1;
+    if(r>=0)out.push([c,p[2],r]);
+  }
+  return out.sort((a,b)=>a[2]-b[2]||a[0].length-b[0].length||a[0].localeCompare(b[0])).slice(0,8);
+}
+function suggestUI(input,box,onPick){
+  input.oninput=()=>{const r=search(input.value);box.innerHTML=r.length?`<div class="sugg">${r.map(([c,n])=>`<button data-c="${c}"><b>${c}</b><small>${esc(n)}</small></button>`).join('')}</div>`:(input.value.trim()&&STK?'<div class="small" style="margin-top:6px">找不到，換個關鍵字試試</div>':'');
+    box.querySelectorAll('button').forEach(b=>b.onclick=()=>{onPick(b.dataset.c);input.value='';box.innerHTML=''});};
+}
+
 function renderWatch(){
-  const box=document.getElementById('watch');
-  const list=store.get('twdash-watch',[{c:'0050',n:'元大台灣50'},{c:'2330',n:'台積電'}]);
-  box.innerHTML=`<div class="chips">${list.length?list.map((w,k)=>`<span class="chip"><a href="https://tw.stock.yahoo.com/quote/${encodeURIComponent(w.c)}" target="_blank" rel="noopener">📈 ${w.c}${w.n?`<small>${w.n}</small>`:''}</a><button data-k="${k}" aria-label="移除">×</button></span>`).join(''):'<span class="small">還沒有自選股，從下面加一檔吧</span>'}</div>
-   <div class="row"><input id="wCode" placeholder="代號 如 0056" inputmode="text" style="flex:1.1"><input id="wName" placeholder="名稱(選填)" style="flex:1"><button class="add" id="wAdd">加入</button></div>
-   <div id="wMsg" class="small" style="margin-top:6px;display:none"></div>`;
-  box.querySelectorAll('.chip button').forEach(b=>b.onclick=()=>{list.splice(+b.dataset.k,1);store.set('twdash-watch',list);renderWatch()});
-  box.querySelector('#wAdd').onclick=()=>{
-    const c=box.querySelector('#wCode').value.trim().toUpperCase(),n=box.querySelector('#wName').value.trim(),m=box.querySelector('#wMsg');
-    if(!/^[0-9A-Z]{4,6}$/.test(c)){m.style.display='block';m.textContent='請輸入 4–6 碼的股票或 ETF 代號，例如 2330、0050、00878';return}
-    if(list.some(w=>w.c===c)){m.style.display='block';m.textContent=c+' 已經在清單裡了';return}
-    list.push({c,n});store.set('twdash-watch',list);renderWatch();
+  const box=document.getElementById('watch');const list=getWatch();
+  box.innerHTML=`<div class="chips">${list.length?list.map((w,k)=>`<span class="chip"><a href="${yq(w.c)}" target="_blank" rel="noopener">📈 ${w.c}<small>${esc(w.n||nameOf(w.c))}</small></a><button data-k="${k}" aria-label="移除">×</button></span>`).join(''):'<span class="small">還沒有自選股</span>'}</div>
+   <div class="row"><input id="wQ" placeholder="${STK?'代號或名稱，如 國泰':'代號，如 00878'}" style="flex:1"><button class="add" id="wAdd">加入</button></div><div id="wSugg"></div>
+   <div class="small" style="margin-top:6px">點 📈 看即時分時圖（Yahoo 股市）</div>`;
+  box.querySelectorAll('.chip button').forEach(b=>b.onclick=()=>{list.splice(+b.dataset.k,1);store.set('twdash-watch',list);renderMe()});
+  const add=c=>{c=c.trim().toUpperCase();if(!/^[0-9A-Z]{4,6}$/.test(c))return;if(!list.some(w=>w.c===c)){list.push({c,n:nameOf(c)});store.set('twdash-watch',list)}renderMe()};
+  const q=box.querySelector('#wQ');suggestUI(q,box.querySelector('#wSugg'),add);
+  box.querySelector('#wAdd').onclick=()=>{const r=search(q.value);add(r.length?r[0][0]:q.value)};
+}
+
+function renderHold(){
+  const box=document.getElementById('hold');const list=getHold();
+  let tc=0,tv=0,tn=0,miss=0;
+  const rows=list.map((h,k)=>{
+    const px=priceOf(h.c),cost=h.sh*h.cost;
+    if(px==null){miss++;return `<div class="h-row"><div class="h-top"><span><b>${h.c}</b> <small>${esc(nameOf(h.c))}</small></span><span class="small">等收盤價資料</span></div><div class="h-sub"><span>${fmt(h.sh,0)} 股・成本 ${fmt(h.cost)}</span><button class="h-x" data-k="${k}">移除</button></div></div>`}
+    const mv=h.sh*px,pl=mv-cost,sellCost=mv*(0.001425+(isETF(h.c)?0.001:0.003));
+    tc+=cost;tv+=mv;tn+=pl-sellCost;
+    return `<div class="h-row"><div class="h-top"><span><b>${h.c}</b> <small>${esc(nameOf(h.c))}</small></span><span class="h-pl ${cls(pl)}">${pl>=0?'+':''}${fmt(pl,0)}</span></div>
+      <div class="h-sub"><span>${fmt(h.sh,0)} 股・成本 ${fmt(h.cost)} → 現價 ${fmt(px)}</span><span class="${cls(pl)}">${pctTxt(pl/cost*100,2)}</span></div>
+      <div class="h-sub"><span>市值 ${fmt(mv,0)}・扣賣出成本約 ${fmt(pl-sellCost,0)}</span><button class="h-x" data-k="${k}">移除</button></div></div>`;
+  }).join('');
+  const tpl=tv-tc;
+  box.innerHTML=(list.length?`<div class="h-total"><div class="small">未實現損益（現價 − 成本）</div><div class="big ${cls(tpl)}">${tpl>=0?'+':''}${fmt(tpl,0)} 元 <span style="font-size:15px">${tc?pctTxt(tpl/tc*100,2):''}</span></div>
+     <div class="small">總成本 ${fmt(tc,0)}・總市值 ${fmt(tv,0)}・扣手續費和證交稅約 ${tn>=0?'+':''}${fmt(tn,0)}</div></div>${rows}`:'<div class="small">還沒有持股。輸入代號、股數和每股平均成本就能自動算損益。</div>')+
+   `<div class="form3"><input id="hC" placeholder="代號"><input id="hS" type="number" inputmode="numeric" placeholder="股數"><input id="hP" type="number" inputmode="decimal" step="any" placeholder="成本/股"><button id="hAdd">加入</button></div><div id="hSugg"></div>
+   <div class="small" style="margin-top:6px">1 張 = 1000 股。成本建議填含手續費的平均價（券商 App 庫存頁有）。同一檔再加入會自動合併、重算平均成本。現價用最近一個交易日收盤價。</div>`;
+  box.querySelectorAll('.h-x').forEach(b=>b.onclick=()=>{list.splice(+b.dataset.k,1);store.set('twdash-hold',list);renderMe()});
+  const cI=box.querySelector('#hC');suggestUI(cI,box.querySelector('#hSugg'),c=>{cI.value=c;box.querySelector('#hS').focus()});
+  box.querySelector('#hAdd').onclick=()=>{
+    let c=cI.value.trim().toUpperCase();const r=search(c);if(r.length&&!/^[0-9A-Z]{4,6}$/.test(c))c=r[0][0];
+    const sh=parseFloat(box.querySelector('#hS').value),p=parseFloat(box.querySelector('#hP').value);
+    if(!/^[0-9A-Z]{4,6}$/.test(c)||!(sh>0)||!(p>0)){alertMsg(box,'請填代號、股數和每股成本');return}
+    const ex=list.find(h=>h.c===c);
+    if(ex){const tot=ex.sh+sh;ex.cost=(ex.sh*ex.cost+sh*p)/tot;ex.sh=tot}else list.push({c,sh,cost:p});
+    store.set('twdash-hold',list);renderMe();
   };
 }
-renderWatch();
+function alertMsg(box,t){let m=box.querySelector('.amsg');if(!m){m=document.createElement('div');m.className='small amsg';m.style.cssText='color:var(--up);margin-top:6px';box.appendChild(m)}m.textContent=t}
+
+function nextEx(c){return STK&&STK.exdiv?STK.exdiv.find(e=>e.c===c&&e.d>=tpeToday()):null}
+function renderCards(){
+  const box=document.getElementById('cards');const codes=myCodes();
+  if(!STK){box.innerHTML='<div class="sc small">個股資料載入中，或等第一次自動更新…</div>';return}
+  if(!codes.length){box.innerHTML='<div class="sc small">加入自選股或持股後，這裡會列出每一檔的重點數字。</div>';return}
+  box.innerHTML=codes.map(c=>{
+    const p=STK.prices[c],px=p?p[0]:null,ch=p?p[1]:null,etf=isETF(c),ex=nextEx(c),dv=STK.div&&STK.div[c],val=STK.val&&STK.val[c];
+    const yld=dv&&px?dv.sum/px*100:(val&&val[1]!=null?val[1]:null);
+    const k=[];
+    if(etf){
+      const e=STK.etf&&STK.etf[c];
+      if(e&&e[2]!=null){const pr=e[2];k.push(['折溢價',`${pr>0?'+':''}${fmt(pr,2)}%`,pr>1?['warn','溢價偏高，等於買貴了']:pr<-1?['u','折價，比淨值便宜']:['n','接近淨值，合理']])}
+      else k.push(['折溢價','—',['n','沒有淨值資料']]);
+    }else{
+      const r=STK.revenue&&STK.revenue[c];
+      if(r){k.push([`${r[0].slice(2).replace('-','/')} 營收年增`,pctTxt(r[2]),r[2]>=10?['u','成長中']:r[2]<=-10?['d','衰退中']:['n','持平']]);
+        k.push(['今年累計營收年增',pctTxt(r[4]),r[4]>=0?['u','累計成長']:['d','累計衰退']]);}
+      else k.push(['月營收','—',['n',/^28/.test(c)?'金融業營收格式不同，這裡不顯示':'查無資料']]);
+      if(val&&val[0]!=null)k.push(['本益比',fmt(val[0],1)+' 倍',['n',val[0]>25?'偏高（較貴）':val[0]<12?'偏低（較便宜）':'中等']]);
+    }
+    k.push(['殖利率（近一年配息）',yld!=null?fmt(yld,2)+'%':'—',['n',dv?`近一年配 ${dv.n} 次、共 ${fmt(dv.sum,2)} 元`:'沒有配息紀錄']]);
+    k.push(['下次除息',ex?ex.d.slice(5).replace('-','/'):'未公告',['n',ex?(ex.cash?`每股配 ${fmt(ex.cash,ex.cash<1?3:2)} 元`:ex.t):'有公告會顯示在這裡']]);
+    return `<div class="sc"><div class="sc-h"><span><b>${c}</b><small>${esc(nameOf(c))}${etf?'・ETF':''}</small><br><a class="chartbtn" style="margin:6px 0 0" href="${yq(c)}" target="_blank" rel="noopener">📈 分時圖</a></span>
+      <span class="sc-px">${px!=null?fmt(px):'—'}<small class="${cls(ch)}">${ch!=null?(ch>0?'▲ +':ch<0?'▼ ':'')+fmt(ch):''}</small></span></div>
+      <div class="kv">${k.map(([a,b,[cc,t]])=>`<div><span>${a}</span><b>${b}</b><em class="${cc==='warn'?'':cc}" ${cc==='warn'?'style="color:var(--warn)"':''}>${t}</em></div>`).join('')}</div></div>`;
+  }).join('');
+}
+
+function events(){
+  const today=tpeToday(),end=new Date(Date.parse(today)+45*864e5).toISOString().slice(0,10),ev=[];
+  const y=+today.slice(0,4);
+  for(let i=0;i<3;i++){const d=new Date(Date.UTC(y,+today.slice(5,7)-1+i,10)).toISOString().slice(0,10);ev.push({d,k:'rev',t:'月營收公布截止',s:'上市櫃公司要在今天前公布上個月營收'})}
+  for(const yy of [y,y+1])for(const [md,t] of [['03-31','全年財報截止'],['05-15','第 1 季財報截止'],['08-14','第 2 季財報截止'],['11-14','第 3 季財報截止']])ev.push({d:`${yy}-${md}`,k:'fin',t,s:'看 EPS、毛利率有沒有成長'});
+  const mine=new Set(myCodes());
+  if(STK&&STK.exdiv)for(const e of STK.exdiv)if(mine.has(e.c))ev.push({d:e.d,k:'mine',t:`${e.c} ${e.n} 除${e.t.includes('權')&&!e.t.includes('息')?'權':'息'}`,s:e.cash?`每股配 ${e.cash} 元。除息前一天以前買進才領得到`:'除權息前一天以前買進才有'});
+  return ev.filter(e=>e.d>=today&&e.d<=end).sort((a,b)=>a.d.localeCompare(b.d));
+}
+function daysTo(d){return Math.round((Date.parse(d)-Date.parse(tpeToday()))/864e5)}
+function renderCal(){
+  const ev=events(),box=document.getElementById('cal');
+  box.innerHTML=ev.length?ev.slice(0,10).map(e=>{const n=daysTo(e.d);return `<div class="cal-row"><div class="cal-d ${n<=3?'near':''}">${e.d.slice(5).replace('-','/')}<small>${n===0?'今天':n===1?'明天':n+' 天後'}</small></div><div class="cal-t"><span class="tag ${e.k}">${e.k==='mine'?'我的':e.k==='rev'?'營收':'財報'}</span>${esc(e.t)}<small>${esc(e.s)}</small></div></div>`}).join(''):'<div class="small">未來 45 天沒有重要日程</div>';
+  const near=ev.filter(e=>daysTo(e.d)<=3);
+  document.getElementById('soon').innerHTML=near.length?`<a class="soon" href="#me">📅 ${near.map(e=>`${daysTo(e.d)===0?'今天':daysTo(e.d)===1?'明天':e.d.slice(5).replace('-','/')} ${e.t}`).join('・')} ›</a>`:'';
+}
+function renderMe(){renderWatch();renderHold();renderCards();renderCal()}
+
+/* 分頁切換（#market / #me） */
+function showTab(t){if(t!=='me')t='market';document.getElementById('tab-market').hidden=t!=='market';document.getElementById('tab-me').hidden=t!=='me';
+  document.querySelectorAll('.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.tab===t));}
+window.addEventListener('hashchange',()=>{showTab(location.hash.slice(1));window.scrollTo(0,0)});
+showTab(location.hash.slice(1));
+renderMe();
+fetch('stocks.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(j&&j.prices){STK=j;renderMe()}}).catch(()=>{});
 
 const secNotes={'大盤':'台股本身','籌碼':'誰在買、誰在賣','情緒':'大家多怕、多貪','國際':'週一開盤前參考（美股 11/13 收盤）'};
 function render(){
