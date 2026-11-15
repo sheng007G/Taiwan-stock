@@ -29,7 +29,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add data.json
+          git add data.json stocks.json
           git diff --cached --quiet && echo "沒有新資料" && exit 0
           git commit -m "更新台股資料 $(TZ=Asia/Taipei date '+%Y-%m-%d %H:%M')"
           git push

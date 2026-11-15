@@ -4,6 +4,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 
 const OUT = new URL('./data.json', import.meta.url);
+const STOCKS = new URL('./stocks.json', import.meta.url); // 全部個股：收盤價、月營收、除息日
 const UA = { 'User-Agent': 'Mozilla/5.0 (twstock-dash; GitHub Actions)', 'Accept': 'application/json' };
 
 const num = s => {
@@ -39,6 +40,25 @@ function findTable(j, pred) {
   Object.keys(j).forEach(k => { const m = k.match(/^fields(\d+)$/); if (m && j['data' + m[1]]) cands.push([j[k], j['data' + m[1]]]); });
   return cands.find(([f, d]) => Array.isArray(f) && Array.isArray(d) && d.length && pred(f.map(String)));
 }
+
+// 把各種 JSON 形狀（物件陣列、fields+data、tables[]）統一成物件陣列
+function rowsOf(j) {
+  if (Array.isArray(j)) return j.every(r => r && typeof r === 'object' && !Array.isArray(r)) ? j : [];
+  const out = [];
+  const add = (f, d) => { if (Array.isArray(f) && Array.isArray(d)) d.forEach(r => { const o = {}; f.forEach((k, i) => o[String(k)] = r[i]); out.push(o); }); };
+  if (Array.isArray(j?.tables)) j.tables.forEach(t => add(t?.fields, t?.data));
+  if (j?.fields && j?.data) add(j.fields, j.data);
+  return out;
+}
+const pick = (o, re) => { const k = Object.keys(o).find(k => re.test(k)); return k == null ? undefined : o[k]; };
+const anyDate = s => { // 1151120、115/11/20、115年11月20日、20261120、2026-11-20 → 2026-11-20
+  const t = String(s ?? '').trim(); let m;
+  if ((m = t.match(/^(\d{2,3})\D+(\d{1,2})\D+(\d{1,2})/)) && +m[1] < 200) return `${+m[1] + 1911}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+  if ((m = t.match(/^(\d{4})\D?(\d{2})\D?(\d{2})/))) return `${m[1]}-${m[2]}-${m[3]}`;
+  if ((m = t.match(/^(\d{3})(\d{2})(\d{2})$/))) return `${+m[1] + 1911}-${m[2]}-${m[3]}`;
+  return null;
+};
+const codeRe = /^(code|securitiescompanycode|companycode|公司代號|股票代號|證券代號|代號)$/i;
 
 const clamp = (x, a = 0, b = 100) => Math.max(a, Math.min(b, x));
 const lin = (x, x0, x1) => clamp((x - x0) / (x1 - x0) * 100); // x0→0 分, x1→100 分
@@ -297,6 +317,60 @@ async function main() {
     const prev = h.length > 1 ? h[h.length - 2].val : null;
     data.items.mood = { date: it.taiex?.date, v: { val, chg: prev != null ? round(val - prev, 1) : null, parts } };
   });
+
+  // 8) 全部個股資料 → stocks.json（給「我的持股」「自選股月營收」「重要日程」用）
+  let st = {}; try { st = JSON.parse(await readFile(STOCKS, 'utf8')); } catch {}
+  st.prices ||= {}; st.revenue ||= {}; st.exdiv ||= [];
+  const addPrices = (rows, mkt) => {
+    let n = 0;
+    for (const r of rows) {
+      const c = String(pick(r, codeRe) ?? '').trim(); const close = num(pick(r, /^(closingprice|close|收盤價?)$/i));
+      if (!/^[0-9A-Z]{4,6}$/.test(c) || !close) continue;
+      st.prices[c] = [close, num(pick(r, /^(change|漲跌價差|漲跌)$/i)), String(pick(r, /^(name|companyname|公司名稱|證券名稱|名稱)$/i) ?? '').trim(), mkt]; n++;
+    }
+    return n;
+  };
+  await step('個股收盤價（上市）', async () => {
+    let n = 0;
+    try { n = addPrices(rowsOf(await getJSON('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL')), 'L'); } catch (e) { console.warn('  ', e.message); }
+    if (!n) { await sleep(1500); n = addPrices(rowsOf(await getJSON(`https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY_ALL?response=json`)), 'L'); }
+    if (!n) throw new Error('沒有資料'); console.log(`  ${n} 檔`);
+  });
+  await step('個股收盤價（上櫃）', async () => {
+    const n = addPrices(rowsOf(await getJSON('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes')), 'O');
+    if (!n) throw new Error('沒有資料'); console.log(`  ${n} 檔`);
+  });
+  st.pricesUpdated = new Date().toISOString();
+
+  const addRevenue = rows => {
+    let n = 0;
+    for (const r of rows) {
+      const c = String(pick(r, codeRe) ?? '').trim(); if (!/^[0-9A-Z]{4,6}$/.test(c)) continue;
+      const ymRaw = String(pick(r, /資料年月|yearmonth/i) ?? '').replace(/\D/g, '');
+      const ym = ymRaw.length === 5 ? `${+ymRaw.slice(0, 3) + 1911}-${ymRaw.slice(3)}` : ymRaw.length === 6 ? `${ymRaw.slice(0, 4)}-${ymRaw.slice(4)}` : '';
+      const rev = num(pick(r, /^(營業收入-當月營收|當月營收)$/));
+      if (rev == null) continue;
+      st.revenue[c] = [ym, rev, num(pick(r, /去年同月增減/)), num(pick(r, /上月比較增減/)), num(pick(r, /前期比較增減/))]; n++;
+    }
+    return n;
+  };
+  await step('月營收（上市）', async () => { const n = addRevenue(rowsOf(await getJSON('https://openapi.twse.com.tw/v1/opendata/t187ap05_L'))); if (!n) throw new Error('沒有資料'); console.log(`  ${n} 家`); });
+  await step('月營收（上櫃）', async () => { const n = addRevenue(rowsOf(await getJSON('https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap05_O'))); if (!n) throw new Error('沒有資料'); console.log(`  ${n} 家`); });
+
+  await step('除權息預告（上市）', async () => {
+    let rows = [];
+    try { rows = rowsOf(await getJSON('https://openapi.twse.com.tw/v1/exchangeReport/TWT48U_ALL')); } catch (e) { console.warn('  ', e.message); }
+    if (!rows.length) { await sleep(1500); rows = rowsOf(await getJSON('https://www.twse.com.tw/rwd/zh/exRight/TWT48U?response=json')); }
+    const today = taipeiDate(1), list = [];
+    for (const r of rows) {
+      const d = anyDate(pick(r, /^(date|除權除息日期|除權息日期)$/i)); const c = String(pick(r, codeRe) ?? '').trim();
+      if (!d || !/^[0-9A-Z]{4,6}$/.test(c) || d < today) continue;
+      list.push({ d, c, n: String(pick(r, /^(name|名稱|公司名稱|證券名稱)$/i) ?? '').trim(), t: String(pick(r, /^(exdividend|除權息)$/i) ?? '').trim(), cash: num(pick(r, /cashdividend|現金股利/i)) });
+    }
+    if (!rows.length) throw new Error('沒有資料');
+    st.exdiv = list.sort((a, b) => a.d.localeCompare(b.d)); console.log(`  未來 ${list.length} 筆（原始 ${rows.length} 筆）`);
+  });
+  await writeFile(STOCKS, JSON.stringify(st));
 
   data.updatedAt = new Date().toISOString();
   data.lastRun = { ok, fail };
