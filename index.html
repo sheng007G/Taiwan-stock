@@ -64,6 +64,17 @@ h2 small{font-weight:400;color:var(--mute);font-size:12px}
 .links a{display:block;padding:10px 0;border-bottom:1px solid var(--line);color:var(--accent);text-decoration:none;font-weight:700;font-size:14.5px}
 .links a small{display:block;color:var(--mute);font-weight:400;font-size:12.5px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.chartbtn{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:700;color:var(--accent);background:#e7eef6;border-radius:20px;padding:2px 9px;margin:8px 0 0 6px;text-decoration:none;vertical-align:middle}
+.watch{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-top:4px}
+.watch h4{margin:0 0 2px;font-size:16px}
+.watch .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.watch .chip{display:inline-flex;align-items:center;background:#f3f1ec;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.watch .chip a{padding:8px 10px;color:var(--ink);text-decoration:none;font-weight:700;font-size:14.5px}
+.watch .chip a small{color:var(--mute);font-weight:400;margin-left:4px}
+.watch .chip button{border:none;background:none;color:var(--mute);font-size:16px;padding:8px 10px 8px 2px;cursor:pointer}
+.watch .row{display:flex;gap:8px;margin-top:10px}
+.watch input{min-width:0;font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff}
+.watch button.add{appearance:none;border:none;background:var(--ink);color:#fff;font:inherit;font-weight:700;padding:0 16px;border-radius:12px;cursor:pointer;white-space:nowrap}
 .legend{font-size:12.5px;color:var(--ink2);display:flex;flex-wrap:wrap;gap:6px 12px;margin:4px 4px 0}
 .fill-card{background:#fffaf0;border:1.5px dashed #e3c98f;border-radius:var(--r);padding:14px;margin-bottom:10px}
 .fill-card h4{margin:0 0 2px;font-size:16px}
@@ -101,6 +112,8 @@ h2 small{font-weight:400;color:var(--mute);font-size:12px}
   <span><b class="u">▲ 偏多</b> 對台股有利</span><span><b class="d">▼ 偏空</b> 對台股不利</span><span><b class="n">● 中性</b></span><span><b style="color:var(--warn)">⚠ 警戒</b> 過熱或風險高</span>
 </div>
 
+<h2>我的自選股<small>點一下看即時分時圖（Yahoo 股市）</small></h2>
+<div class="watch" id="watch"></div>
 <div id="sections"></div>
 
 <h2>去哪裡更新數字</h2>
@@ -129,7 +142,7 @@ const S={bull:['bull','▲ 偏多'],bear:['bear','▼ 偏空'],neu:['neu','● �
 
 /* 指標定義：v=預設值（2026/11/13），fields=可更新欄位，sig=燈號規則 */
 const IND=[
- {sec:'大盤',id:'taiex',name:'加權指數',wide:true,
+ {sec:'大盤',id:'taiex',chart:'https://tw.stock.yahoo.com/quote/%5ETWII',name:'加權指數',wide:true,
   v:{val:43675.12,chg:583.25,pct:1.35,hi:49968.92,lo:26395.98},
   fields:[['val','收盤點數'],['chg','漲跌點數'],['pct','漲跌幅 %'],['hi','52 週最高'],['lo','52 週最低']],
   main:v=>fmt(v.val),chgTxt:v=>`<span class="${cls(v.chg)}">${sgn(v.chg)}（${v.pct>0?'+':''}${fmt(v.pct)}%）</span>`,
@@ -149,14 +162,14 @@ const IND=[
   why:'成交金額＝市場熱度。要搭配指數漲跌一起看（量價關係）。',
   rule:['價漲量增 → 偏多','價跌量增 → 偏空','價漲量縮、價跌量縮 → 中性（觀望）','量增減以 ±5% 為界'],
   src:['證交所','https://www.twse.com.tw/']},
- {sec:'大盤',id:'otc',name:'櫃買指數',
+ {sec:'大盤',id:'otc',chart:'https://tw.stock.yahoo.com/quote/%5ETWOII',name:'櫃買指數',
   v:{val:342.41,chg:6.68,pct:1.99},
   fields:[['val','收盤'],['chg','漲跌點數'],['pct','漲跌幅 %']],
   main:v=>fmt(v.val),chgTxt:v=>`<span class="${cls(v.chg)}">${sgn(v.chg)}（${v.pct>0?'+':''}${fmt(v.pct)}%）</span>`,
   sig:v=>v.pct>=0.5?['bull','中小型股上漲']:v.pct<=-0.5?['bear','中小型股下跌']:['neu','小漲小跌'],
   why:'上櫃中小型股的大盤。比加權指數強，代表資金也在中小型股活動。',
   rule:['漲跌幅 ≥ 0.5% → 偏多；≤ −0.5% → 偏空'],src:['櫃買中心','https://www.tpex.org.tw/']},
- {sec:'大盤',id:'tsmc',name:'台積電 2330',
+ {sec:'大盤',id:'tsmc',chart:'https://tw.stock.yahoo.com/quote/2330',name:'台積電 2330',
   v:{val:2350,chg:10,pct:0.43},
   fields:[['val','收盤價（元）'],['chg','漲跌（元）'],['pct','漲跌幅 %']],
   main:v=>fmt(v.val,0)+'<small>元</small>',chgTxt:v=>`<span class="${cls(v.chg)}">${sgn(v.chg,0)}（${v.pct>0?'+':''}${fmt(v.pct)}%）</span>`,
@@ -207,14 +220,14 @@ const IND=[
   why:'期交所編製的「恐慌指數」，數字越高代表市場預期未來波動越大。每天從期交所網站自動抓；如果抓不到，也可以自己填。',
   rule:['≥ 30 → 警戒','20–30 → 中性','< 20 → 平穩（偏多）'],src:['臺灣期貨交易所','https://www.taifex.com.tw/']},
 
- {sec:'國際',id:'sox',name:'費城半導體',
+ {sec:'國際',id:'sox',chart:'https://tw.stock.yahoo.com/quote/%5ESOX',name:'費城半導體',
   v:{val:10146.32,chg:-360.35,pct:-3.43},
   fields:[['val','收盤'],['chg','漲跌點數'],['pct','漲跌幅 %']],
   main:v=>fmt(v.val),chgTxt:v=>`<span class="${cls(v.chg)}">${sgn(v.chg)}（${fmt(v.pct)}%）</span>`,
   sig:v=>v.pct>=1?['bull','半導體走強']:v.pct<=-1?['bear','半導體走弱，台股電子股承壓']:['neu','小漲小跌'],
   why:'台股電子股占比高，費半是隔天台股的重要前導。美股收盤在台灣清晨，所以這是「今天台股開盤前」的參考。',
   rule:['漲跌幅 ≥ 1% → 偏多；≤ −1% → 偏空'],src:['鉅亨網、Yahoo股市','https://tw.stock.yahoo.com/quote/%5ESOX']},
- {sec:'國際',id:'adr',name:'台積電 ADR',
+ {sec:'國際',id:'adr',chart:'https://tw.stock.yahoo.com/quote/TSM',name:'台積電 ADR',
   v:{val:398.73,chg:-6.76,pct:-1.67,tw:2618.70},
   fields:[['val','收盤（美元）'],['chg','漲跌（美元）'],['pct','漲跌幅 %'],['tw','折合台股每股（元）']],
   main:v=>fmt(v.val)+'<small>美元</small>',chgTxt:v=>`<span class="${cls(v.chg)}">${sgn(v.chg)}（${fmt(v.pct)}%）</span>`,
@@ -270,6 +283,23 @@ function partsTable(v){
   return `<div style="font-weight:700;font-size:15px;margin-top:6px">這次怎麼算出來的</div><table class="parts">${v.parts.map(p=>`<tr><td style="width:34%"><b>${p.name}</b></td><td>${p.raw}<div class="bar"><i style="width:${p.score}%"></i></div></td><td style="width:44px;text-align:right;font-weight:700">${p.score}</td></tr>`).join('')}</table>`;
 }
 
+/* ===== 自選股：點了開 Yahoo 股市分時圖 ===== */
+function renderWatch(){
+  const box=document.getElementById('watch');
+  const list=store.get('twdash-watch',[{c:'0050',n:'元大台灣50'},{c:'2330',n:'台積電'}]);
+  box.innerHTML=`<div class="chips">${list.length?list.map((w,k)=>`<span class="chip"><a href="https://tw.stock.yahoo.com/quote/${encodeURIComponent(w.c)}" target="_blank" rel="noopener">📈 ${w.c}${w.n?`<small>${w.n}</small>`:''}</a><button data-k="${k}" aria-label="移除">×</button></span>`).join(''):'<span class="small">還沒有自選股，從下面加一檔吧</span>'}</div>
+   <div class="row"><input id="wCode" placeholder="代號 如 0056" inputmode="text" style="flex:1.1"><input id="wName" placeholder="名稱(選填)" style="flex:1"><button class="add" id="wAdd">加入</button></div>
+   <div id="wMsg" class="small" style="margin-top:6px;display:none"></div>`;
+  box.querySelectorAll('.chip button').forEach(b=>b.onclick=()=>{list.splice(+b.dataset.k,1);store.set('twdash-watch',list);renderWatch()});
+  box.querySelector('#wAdd').onclick=()=>{
+    const c=box.querySelector('#wCode').value.trim().toUpperCase(),n=box.querySelector('#wName').value.trim(),m=box.querySelector('#wMsg');
+    if(!/^[0-9A-Z]{4,6}$/.test(c)){m.style.display='block';m.textContent='請輸入 4–6 碼的股票或 ETF 代號，例如 2330、0050、00878';return}
+    if(list.some(w=>w.c===c)){m.style.display='block';m.textContent=c+' 已經在清單裡了';return}
+    list.push({c,n});store.set('twdash-watch',list);renderWatch();
+  };
+}
+renderWatch();
+
 const secNotes={'大盤':'台股本身','籌碼':'誰在買、誰在賣','情緒':'大家多怕、多貪','國際':'週一開盤前參考（美股 11/13 收盤）'};
 function render(){
   const box=document.getElementById('sections');box.innerHTML='';
@@ -281,8 +311,8 @@ function render(){
     const v=i.cur,[sc,st]=i.sig(v); if(tally[sc]!=null)tally[sc]++;
     const t=document.createElement('div');t.className='tile'+(i.wide?' wide':'');
     let m='';if(i.meter&&i.meter(v)){const mm=i.meter(v);const p=Math.max(0,Math.min(1,mm.p))*100;m=`<div class="meter"><div class="track"><div class="fill" style="width:${p}%"></div><div class="dot" style="left:${p}%"></div></div><div class="ends"><span>${mm.l}</span><span>${mm.r}</span></div></div>`;}
-    t.innerHTML=`${overrideOn(i)?'<span class="mine">你輸入的</span>':`<span class="mine" style="background:none;color:var(--mute)">${dateOf(i)}</span>`}<div class="name">${i.name}</div><div class="val">${i.main(v)}</div><div class="chg">${i.chgTxt(v)}</div>${i.sub?`<div class="sub">${i.sub(v)}</div>`:''}${m}<span class="sig ${S[sc][0]}">${S[sc][1]}</span>`;
-    t.onclick=()=>open(idx);grid.appendChild(t);
+    t.innerHTML=`${overrideOn(i)?'<span class="mine">你輸入的</span>':`<span class="mine" style="background:none;color:var(--mute)">${dateOf(i)}</span>`}<div class="name">${i.name}</div><div class="val">${i.main(v)}</div><div class="chg">${i.chgTxt(v)}</div>${i.sub?`<div class="sub">${i.sub(v)}</div>`:''}${m}<span class="sig ${S[sc][0]}">${S[sc][1]}</span>${i.chart?`<a class="chartbtn" href="${i.chart}" target="_blank" rel="noopener">📈 分時圖</a>`:''}`;
+    t.onclick=e=>{if(e.target.closest('a'))return;open(idx)};grid.appendChild(t);
   });
   document.getElementById('tally').innerHTML=`<span>▲ 偏多 ${tally.bull}</span><span>▼ 偏空 ${tally.bear}</span><span>● 中性 ${tally.neu}</span><span>⚠ 警戒 ${tally.warn}</span>`;
   const tx=IND.find(x=>x.id==='taiex');
@@ -321,6 +351,7 @@ function open(idx){
   ${i.fields.length?`<div style="margin-top:14px;font-weight:700;font-size:15px">手動輸入</div><div style="font-size:12.5px;color:var(--mute)">${i.id==='fg'?'這個指標要自己填。':'會自動更新；手動輸入的數字在下次自動更新後會被取代。'}</div>`:''}
   ${i.fields.map(([k,l])=>`<label>${l}</label><input data-k="${k}" ${k==='note'?'type="text"':'type="number" step="any" inputmode="decimal"'} value="${v[k]==null?'':v[k]}">`).join('')}
   <div class="btns">${i.fields.length?'<button class="btn" id="save">儲存</button>':''}${saved[i.id]?'<button class="btn ghost" id="undo">改回自動</button>':''}<button class="btn ghost" id="cls">關閉</button></div>
+  ${i.chart?`<a class="chartbtn" style="margin:12px 0 0;padding:8px 14px;font-size:14px" href="${i.chart}" target="_blank" rel="noopener">📈 打開即時分時圖（Yahoo 股市）↗</a>`:''}
   <div class="src">資料日期：${dateOf(i)}・來源：${i.src[0]}・<a href="${i.src[1]}" target="_blank" rel="noopener">去查最新數字 ↗</a></div>`;
   sheet.classList.add('on');scrim.classList.add('on');sheet.scrollTop=0;
   sheet.querySelector('#cls').onclick=close;
