@@ -58,6 +58,7 @@ const anyDate = s => { // 1151120、115/11/20、115年11月20日、20261120、20
   if ((m = t.match(/^(\d{3})(\d{2})(\d{2})$/))) return `${+m[1] + 1911}-${m[2]}-${m[3]}`;
   return null;
 };
+const isSec = c => /^\d{4}[A-Z]?$/.test(c) || /^00\d{2,4}[A-Z]?$/.test(c); // 股票、特別股、ETF（排除權證）
 const codeRe = /^(code|securitiescompanycode|companycode|公司代號|股票代號|證券代號|代號)$/i;
 
 const clamp = (x, a = 0, b = 100) => Math.max(a, Math.min(b, x));
@@ -320,12 +321,12 @@ async function main() {
 
   // 8) 全部個股資料 → stocks.json（給「我的持股」「自選股月營收」「重要日程」用）
   let st = {}; try { st = JSON.parse(await readFile(STOCKS, 'utf8')); } catch {}
-  st.prices ||= {}; st.revenue ||= {}; st.exdiv ||= [];
+  st.prices = {}; st.revenue ||= {}; st.exdiv ||= []; st.etf ||= {}; st.val ||= {}; st.div ||= {};
   const addPrices = (rows, mkt) => {
     let n = 0;
     for (const r of rows) {
       const c = String(pick(r, codeRe) ?? '').trim(); const close = num(pick(r, /^(closingprice|close|收盤價?)$/i));
-      if (!/^[0-9A-Z]{4,6}$/.test(c) || !close) continue;
+      if (!isSec(c) || !close) continue;
       st.prices[c] = [close, num(pick(r, /^(change|漲跌價差|漲跌)$/i)), String(pick(r, /^(name|companyname|公司名稱|證券名稱|名稱)$/i) ?? '').trim(), mkt]; n++;
     }
     return n;
@@ -369,6 +370,36 @@ async function main() {
     }
     if (!rows.length) throw new Error('沒有資料');
     st.exdiv = list.sort((a, b) => a.d.localeCompare(b.d)); console.log(`  未來 ${list.length} 筆（原始 ${rows.length} 筆）`);
+  });
+  // ETF 折溢價（證交所 ETF 估計淨值；收盤後為當日最後一筆）
+  await step('ETF折溢價', async () => {
+    const j = await getJSON('https://mis.twse.com.tw/stock/data/all_etf.txt');
+    const items = []; const walk = o => { if (Array.isArray(o)) o.forEach(walk); else if (o && typeof o === 'object') { if ('a' in o && 'f' in o) items.push(o); else Object.values(o).forEach(walk); } };
+    walk(j); let n = 0;
+    for (const o of items) {
+      const c = String(o.a).trim(), px = num(o.e), nav = num(o.f), prem = num(o.g);
+      if (!isSec(c) || !nav) continue;
+      st.etf[c] = [px, nav, prem ?? (px ? round((px / nav - 1) * 100) : null), String(o.i || '') + ' ' + String(o.j || '')]; n++;
+    }
+    if (!n) throw new Error('沒有資料：' + JSON.stringify(j).slice(0, 200)); console.log(`  ${n} 檔`);
+  });
+  // 本益比、殖利率、股價淨值比（個股）
+  const addVal = rows => { let n = 0; for (const r of rows) { const c = String(pick(r, codeRe) ?? '').trim(); if (!isSec(c)) continue;
+    const pe = num(pick(r, /^(peratio|priceearningratio|本益比)$/i)), y = num(pick(r, /^(dividendyield|yieldratio|殖利率\(%\)|殖利率)$/i)), pb = num(pick(r, /^(pbratio|pricebookratio|股價淨值比)$/i));
+    if (pe == null && y == null && pb == null) continue; st.val[c] = [pe, y, pb]; n++; } return n; };
+  await step('本益比殖利率（上市）', async () => { const n = addVal(rowsOf(await getJSON('https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL'))); if (!n) throw new Error('沒有資料'); console.log(`  ${n} 檔`); });
+  await step('本益比殖利率（上櫃）', async () => { const n = addVal(rowsOf(await getJSON('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_peratio_analysis'))); if (!n) throw new Error('沒有資料'); console.log(`  ${n} 檔`); });
+  // 近一年現金配息（含 ETF）→ 算殖利率
+  await step('近一年配息（上市）', async () => {
+    const j = await getJSON(`https://www.twse.com.tw/rwd/zh/exRight/TWT49U?startDate=${ymd(taipeiDate(365))}&endDate=${ymd(taipeiDate(0))}&response=json`);
+    const rows = rowsOf(j), div = {};
+    for (const r of rows) {
+      const c = String(pick(r, codeRe) ?? '').trim(), d = anyDate(pick(r, /資料日期|日期/)), kind = String(pick(r, /^權\/息$/) ?? ''), amt = num(pick(r, /權值\+息值|息值/));
+      if (!isSec(c) || !d || !amt || !kind.includes('息')) continue;
+      const x = div[c] ||= { sum: 0, n: 0, last: null }; x.sum = round(x.sum + amt, 4); x.n++; if (!x.last || d > x.last[0]) x.last = [d, amt];
+    }
+    if (!Object.keys(div).length) throw new Error('沒有資料，原始 ' + rows.length + ' 筆');
+    st.div = div; console.log(`  ${Object.keys(div).length} 檔（原始 ${rows.length} 筆）`);
   });
   await writeFile(STOCKS, JSON.stringify(st));
 
