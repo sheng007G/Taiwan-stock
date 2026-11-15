@@ -8,7 +8,7 @@
 |---|---|
 | `index.html` | App 本體 |
 | `data.json` | 最新資料（自動更新，不用手動改） |
-| `update.mjs` | 抓資料的程式 |
+| `update.js` | 抓資料的程式 |
 | `.github/workflows/update-data.yml` | 排程：什麼時間自動執行 |
 
 ## 設定步驟（約 10 分鐘，只要做一次）

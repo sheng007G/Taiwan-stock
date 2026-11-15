@@ -24,7 +24,11 @@ async function getJSON(url) {
 async function getText(url) {
   const res = await fetch(url, { headers: { ...UA, Accept: 'text/html,text/plain,*/*' } });
   if (!res.ok) throw new Error(`${res.status} ${url}`);
-  return res.text();
+  const buf = new Uint8Array(await res.arrayBuffer());
+  // 期交所檔案可能是 UTF-16 或 Big5，依內容判斷編碼
+  let nul = 0; for (let i = 0; i < Math.min(buf.length, 400); i++) if (buf[i] === 0) nul++;
+  if (nul > 20) return new TextDecoder(buf[0] === 0 ? 'utf-16be' : 'utf-16le').decode(buf);
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch { try { return new TextDecoder('big5').decode(buf); } catch { return new TextDecoder().decode(buf); } }
 }
 
 // 證交所 JSON 裡找出欄位名稱符合條件的表格（支援新版 tables[] 與舊版 fieldsN/dataN）
@@ -200,16 +204,23 @@ async function main() {
   // 5b) 台指 VIX：① 期交所每月資料檔 ② FinMind 開放資料 ③ 期交所網頁
   await step('台指VIX', async () => {
     const found = []; // [iso, value]
+    // 逐行讀：找出日期，再取同一行「最後一個帶小數點的數字」當 VIX
     const scan = txt => {
-      const re = /(20\d{2})[\/\-]?(\d{2})[\/\-]?(\d{2})(?:[\sT]+\d{1,2}:?\d{2}:?\d{2}(?:\.\d+)?)?[\s,|\t]+(\d{1,3}\.\d{1,4})/g;
-      let m; while ((m = re.exec(txt))) { const v = parseFloat(m[4]); if (v > 3 && v < 150) found.push([`${m[1]}-${m[2]}-${m[3]}`, v]); }
+      for (const line of txt.replace(/\u0000/g, '').split(/\r?\n/)) {
+        const dm = line.match(/(20\d{2})[\/\-.]?(\d{2})[\/\-.]?(\d{2})/); if (!dm) continue;
+        const rest = line.slice(dm.index + dm[0].length);
+        const nums = [...rest.matchAll(/(?<![\d:])(\d{1,3}\.\d{1,6})(?![\d:])/g)].map(m => parseFloat(m[1])).filter(v => v > 3 && v < 150);
+        if (nums.length) found.push([`${dm[1]}-${dm[2]}-${dm[3]}`, nums[nums.length - 1]]);
+      }
     };
     // ① 期交所每月檔（本月＋上月；英文版與中文版路徑都試）
     const months = [taipeiDate(0), taipeiDate(28)].map(d => d.slice(0, 7).replace('-', ''));
     for (const ym of [...new Set(months)].reverse()) {
       for (const dir of ['log2data_eng', 'log2data']) {
         const u = `https://www.taifex.com.tw/file/taifex/Dailydownload/vix/${dir}/${ym}new.txt`;
-        try { const t = await getText(u); const n0 = found.length; scan(t); console.log(`  ${u} → ${found.length - n0} 筆`); if (found.length > n0) break; }
+        try { const t = await getText(u); const n0 = found.length; scan(t); console.log(`  ${u} → ${found.length - n0} 筆（${t.length} 字）`);
+          if (found.length === n0) console.log('  檔案開頭：' + JSON.stringify(t.slice(0, 300)));
+          if (found.length > n0) break; }
         catch (e) { console.warn('  ', e.message); }
         await sleep(800);
       }
