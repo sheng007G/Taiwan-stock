@@ -1,0 +1,35 @@
+name: 更新台股資料
+
+on:
+  schedule:
+    - cron: '40 7 * * 1-5'
+    - cron: '20 13 * * 1-5'
+    - cron: '35 22 * * 1-5'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 抓資料
+        run: node update.mjs
+      - name: 存回 repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git diff --cached --quiet && echo "沒有新資料" && exit 0
+          git commit -m "更新台股資料 $(TZ=Asia/Taipei date '+%Y-%m-%d %H:%M')"
+          git push
