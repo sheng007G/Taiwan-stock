@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>台股指標儀表板</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1d1d1f;--ink2:#4a4a50;--mute:#7a7a80;--line:#e6e2d9;
+--up:#d6352b;--upbg:#fbe9e7;--down:#13915b;--downbg:#e5f4ec;--neu:#6b6b70;--neubg:#efede7;--warn:#a8690f;--warnbg:#fdf1dc;--accent:#1f4e79;--r:16px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC",-apple-system,"PingFang TC",sans-serif;line-height:1.6}
+body{padding:env(safe-area-inset-top) 0 calc(30px + env(safe-area-inset-bottom))}
+.wrap{max-width:640px;margin:0 auto;padding:0 14px}
+header{padding:20px 4px 4px}
+.eyebrow{font-size:12px;letter-spacing:.12em;color:var(--mute)}
+h1{margin:2px 0 0;font-size:25px;font-weight:900}
+.asof{font-size:13px;color:var(--mute);margin-top:2px}
+.hero{background:var(--ink);color:#fff;border-radius:var(--r);padding:16px;margin:14px 0}
+.hero .lbl{font-size:12px;color:#ffffffaa}
+.hero .txt{font-size:16px;font-weight:700;margin-top:4px}
+.hero .txt b{color:#ffd27a}
+.tally{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.tally span{font-size:13px;padding:3px 10px;border-radius:20px;background:#ffffff1a}
+h2{font-size:15px;margin:22px 4px 8px;color:var(--ink2);font-weight:700;display:flex;align-items:baseline;gap:8px}
+h2 small{font-weight:400;color:var(--mute);font-size:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px 13px 11px;cursor:pointer;position:relative;min-width:0}
+.tile.wide{grid-column:1/-1}
+.tile .name{font-size:13px;color:var(--ink2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .val{font-size:24px;font-weight:900;letter-spacing:-.01em;margin-top:2px;font-variant-numeric:tabular-nums;line-height:1.25}
+.tile .val small{font-size:13px;font-weight:500;color:var(--mute);margin-left:2px}
+.tile .chg{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.tile .sub{font-size:12px;color:var(--mute);margin-top:2px}
+.u{color:var(--up)}.d{color:var(--down)}.n{color:var(--neu)}
+.sig{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:2px 9px;border-radius:20px;margin-top:8px}
+.sig.bull{background:var(--upbg);color:var(--up)}
+.sig.bear{background:var(--downbg);color:var(--down)}
+.sig.neu{background:var(--neubg);color:var(--neu)}
+.sig.warn{background:var(--warnbg);color:var(--warn)}
+.sig.none{background:var(--neubg);color:var(--mute);font-weight:500}
+.mine{position:absolute;top:10px;right:10px;font-size:10.5px;color:var(--accent);background:#e7eef6;border-radius:8px;padding:0 6px}
+.meter{margin-top:12px}
+.meter .track{position:relative;height:6px;background:var(--neubg);border-radius:4px}
+.meter .fill{position:absolute;left:0;top:0;bottom:0;background:#c9c4b6;border-radius:4px}
+.meter .dot{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid #fff;transform:translate(-50%,-50%);box-shadow:0 0 0 1px var(--ink)}
+.meter .ends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mute);margin-top:4px;font-variant-numeric:tabular-nums}
+/* sheet */
+.scrim{position:fixed;inset:0;background:#0006;display:none;z-index:20}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;max-height:86vh;overflow:auto;padding:8px 18px calc(22px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .28s ease;z-index:21;max-width:640px;margin:0 auto}
+.sheet.on{transform:none}.scrim.on{display:block}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 10px}
+.sheet h3{margin:0;font-size:20px}
+.sheet .why{background:#f7f5f0;border-radius:12px;padding:10px 12px;font-size:14.5px;margin:12px 0}
+.sheet .rule{font-size:13.5px;color:var(--ink2)}
+.sheet .rule li{margin:3px 0}
+.sheet label{display:block;font-size:13px;color:var(--ink2);margin:10px 0 4px}
+.sheet input{font:inherit;width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px}
+.sheet .src{font-size:13px;color:var(--mute);margin-top:10px}
+.sheet .src a{color:var(--accent);font-weight:700}
+.btns{display:flex;gap:8px;margin-top:14px}
+.btn{flex:1;appearance:none;border:none;background:var(--accent);color:#fff;font:inherit;font-weight:700;padding:11px;border-radius:12px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.links a{display:block;padding:10px 0;border-bottom:1px solid var(--line);color:var(--accent);text-decoration:none;font-weight:700;font-size:14.5px}
+.links a small{display:block;color:var(--mute);font-weight:400;font-size:12.5px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.legend{font-size:12.5px;color:var(--ink2);display:flex;flex-wrap:wrap;gap:6px 12px;margin:4px 4px 0}
+.fill-card{background:#fffaf0;border:1.5px dashed #e3c98f;border-radius:var(--r);padding:14px;margin-bottom:10px}
+.fill-card h4{margin:0 0 2px;font-size:16px}
+.fill-card .meta{font-size:13px;color:var(--ink2)}
+.fill-card .due{color:var(--warn);font-weight:700}
+.fill-card .go{display:block;text-align:center;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;padding:11px;border-radius:12px;margin-top:10px}
+.fill-card .row{display:flex;gap:8px;margin-top:8px}
+.fill-card input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff}
+.fill-card button.save{appearance:none;border:none;background:var(--ink);color:#fff;font:inherit;font-weight:700;padding:0 16px;border-radius:12px;cursor:pointer}
+.fill-card .hist{font-size:12.5px;color:var(--mute);margin-top:8px}
+.fill-card .setlink{background:none;border:none;color:var(--accent);font:inherit;font-size:12.5px;text-decoration:underline;padding:0;cursor:pointer;margin-top:6px}
+.parts{width:100%;border-collapse:collapse;font-size:13.5px;margin:8px 0}
+.parts td{padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+.parts .bar{height:6px;background:var(--neubg);border-radius:4px;position:relative;margin-top:5px}
+.parts .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--ink2);border-radius:4px}
+.foot{font-size:12px;color:var(--mute);text-align:center;margin:22px 8px 0}
+.resetall{display:block;margin:14px auto 0;background:none;border:none;color:var(--accent);font:inherit;font-size:13.5px;text-decoration:underline;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">TAIWAN STOCK DASHBOARD</div>
+  <h1>台股指標儀表板</h1>
+  <div class="asof" id="asof">資料截至 2026/11/13（五）收盤・點任一卡片看解讀或更新數字</div>
+</header>
+
+<div class="hero">
+  <div class="lbl">先講結論</div>
+  <div class="txt" id="heroTxt"></div>
+  <div class="tally" id="tally"></div>
+</div>
+
+<div class="legend">
+  <span><b class="u">▲ 偏多</b> 對台股有利</span><span><b class="d">▼ 偏空</b> 對台股不利</span><span><b class="n">● 中性</b></span><span><b style="color:var(--warn)">⚠ 警戒</b> 過熱或風險高</span>
+</div>
+
+<div id="sections"></div>
+
+<h2>去哪裡更新數字</h2>
+<div class="card links">
+  <a href="https://www.twse.com.tw/" target="_blank" rel="noopener">臺灣證券交易所<small>加權指數、成交金額、三大法人、融資融券</small></a>
+  <a href="https://www.tpex.org.tw/" target="_blank" rel="noopener">證券櫃檯買賣中心<small>櫃買指數</small></a>
+  <a href="https://www.taifex.com.tw/" target="_blank" rel="noopener">臺灣期貨交易所<small>台指 VIX</small></a>
+  <a href="https://www.macromicro.me/" target="_blank" rel="noopener">財經M平方<small>台灣-MM恐懼與貪婪指數</small></a>
+  <a href="https://tw.stock.yahoo.com/" target="_blank" rel="noopener">Yahoo股市<small>費半、台積電 ADR、匯率一次看</small></a>
+  <a href="https://claude.ai/artifact/8nZNDFZT3bmLumkhtvJLYM" target="_blank" rel="noopener">← 台股小白上手（教學 App）<small>看不懂某個指標？回課程複習</small></a>
+</div>
+<button class="resetall" id="resetAll">清除我手動輸入的數字</button>
+<p class="foot" id="foot">自動更新：證交所（加權指數、成交金額、三大法人、融資、台積電）＋ Yahoo Finance（櫃買、費半、台積電 ADR、匯率）。＋期交所（台指 VIX）；融資維持率與台股情緒分數由 App 自己計算。<br>MM 恐懼與貪婪指數需每週手動填寫。<br>燈號是簡化規則，只供學習參考，不構成投資建議。</p>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"></div>
+
+<script>
+(function(){
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const fmt=(n,dp=2)=>n==null||n===''||isNaN(n)?'—':Number(n).toLocaleString('en-US',{minimumFractionDigits:dp,maximumFractionDigits:dp});
+const sgn=(n,dp=2)=>(n>0?'▲ +':n<0?'▼ ':'')+fmt(n,dp);
+const cls=n=>n>0?'u':n<0?'d':'n';
+const S={bull:['bull','▲ 偏多'],bear:['bear','▼ 偏空'],neu:['neu','● 中性'],warn:['warn','⚠ 警戒'],none:['none','未輸入']};
+
+/* 指標定義：v=預設值（2026/11/13），fields=可更新欄位，sig=燈號規則 */
+const IND=[
+ {sec:'大盤',id:'taiex',name:'加權指數',wide:true,
+  v:{val:43675.12,chg:583.25,pct:1.35,hi:49968.92,lo:26395.98},
+  fields:[['val','收盤點數'],['chg','漲跌點數'],['pct','漲跌幅 %'],['hi','52 週最高'],['lo','52 週最低']],
+  main:v=>fmt(v.val),chgTxt:v=>`<span class="${cls(v.chg)}">${sgn(v.chg)}（${v.pct>0?'+':''}${fmt(v.pct)}%）</span>`,
+  sub:v=>`距高點 ${fmt((v.val/v.hi-1)*100,1)}%`,
+  meter:v=>({p:(v.val-v.lo)/(v.hi-v.lo),l:'52週低 '+fmt(v.lo,0),r:'高 '+fmt(v.hi,0)}),
+  sig:v=>{const off=(v.val/v.hi-1)*100; if(off<-20)return['bear','跌幅超過 20%，屬空頭修正']; if(v.pct>=0.5)return['bull','今天上漲']; if(v.pct<=-0.5)return['bear','今天下跌']; return['neu','小漲小跌'];},
+  why:'台股整體的溫度計。52 週高低用收盤價計算（10/6 盤中最高 49,968.92 點；11/6 收在 39,701.64 點）。',
+  rule:['今日漲跌 ≥ 0.5% → 偏多；≤ −0.5% → 偏空','距 52 週高點跌超過 20% → 偏空（技術上的空頭）'],
+  src:['證交所、Yahoo股市','https://www.twse.com.tw/']},
+ {sec:'大盤',id:'vol',name:'上市成交金額',
+  v:{val:9515.80,pct:-9.96,idx:1.35},
+  fields:[['val','成交金額（億元）'],['pct','較前一日增減 %'],['idx','同日加權指數漲跌幅 %']],
+  main:v=>fmt(v.val,0)+'<small>億</small>',chgTxt:v=>`<span class="n">較前日 ${v.pct>0?'+':''}${fmt(v.pct,1)}%</span>`,
+  sig:v=>{const up=v.idx>0,inc=v.pct>5,dec=v.pct<-5;
+    if(up&&inc)return['bull','價漲量增：上漲有人追']; if(up&&dec)return['neu','價漲量縮：追價意願偏弱'];
+    if(!up&&inc)return['bear','價跌量增：賣壓沉重']; if(!up&&dec)return['neu','價跌量縮：賣壓減輕']; return['neu','量能持平'];},
+  why:'成交金額＝市場熱度。要搭配指數漲跌一起看（量價關係）。',
+  rule:['價漲量增 → 偏多','價跌量增 → 偏空','價漲量縮、價跌量縮 → 中性（觀望）','量增減以 ±5% 為界'],
+  src:['證交所','https://www.twse.com.tw/']},
+ {sec:'大盤',id:'otc',name:'櫃買指數',
+  v:{val:342.41,chg:6.68,pct:1.99},
+  fields:[['val','收盤'],['chg','漲跌點數'],['pct','漲跌幅 %']],
+  main:v=>fmt(v.val),chgTxt:v=>`<span class="${cls(v.chg)}">${sgn(v.chg)}（${v.pct>0?'+':''}${fmt(v.pct)}%）</span>`,
+  sig:v=>v.pct>=0.5?['bull','中小型股上漲']:v.pct<=-0.5?['bear','中小型股下跌']:['neu','小漲小跌'],
+  why:'上櫃中小型股的大盤。比加權指數強，代表資金也在中小型股活動。',
+  rule:['漲跌幅 ≥ 0.5% → 偏多；≤ −0.5% → 偏空'],src:['櫃買中心','https://www.tpex.org.tw/']},
+ {sec:'大盤',id:'tsmc',name:'台積電 2330',
+  v:{val:2350,chg:10,pct:0.43},
+  fields:[['val','收盤價（元）'],['chg','漲跌（元）'],['pct','漲跌幅 %']],
+  main:v=>fmt(v.val,0)+'<small>元</small>',chgTxt:v=>`<span class="${cls(v.chg)}">${sgn(v.chg,0)}（${v.pct>0?'+':''}${fmt(v.pct)}%）</span>`,
+  sig:v=>v.pct>=0.5?['bull','權王上漲撐盤']:v.pct<=-0.5?['bear','權王下跌壓盤']:['neu','小漲小跌'],
+  why:'台股權重最大的股票，台積電怎麼走，大盤常跟著走。',
+  rule:['漲跌幅 ≥ 0.5% → 偏多；≤ −0.5% → 偏空'],src:['Yahoo股市','https://tw.stock.yahoo.com/quote/2330.TW']},
+
+ {sec:'籌碼',id:'foreign',name:'外資買賣超',
+  v:{val:288.37,note:'終止連 11 賣'},
+  fields:[['val','買賣超（億元，賣超填負數）'],['note','備註（例：連 3 買）']],
+  main:v=>`<span class="${cls(v.val)}">${v.val>0?'+':''}${fmt(v.val)}</span><small>億</small>`,chgTxt:v=>`<span class="n">${v.note||''}</span>`,sub:v=>v.extra||'',
+  sig:v=>v.val>=50?['bull','外資買進']:v.val<=-50?['bear','外資賣出']:['neu','買賣不大'],
+  why:'外資資金最大，連續買超或賣超常主導大盤方向。「連 N 買／賣」從開始自動更新後累積計算。',
+  rule:['買超 ≥ 50 億 → 偏多','賣超 ≥ 50 億 → 偏空','重點看「連續幾天」而不是單一天'],
+  src:['證交所 三大法人買賣金額統計','https://www.twse.com.tw/']},
+ {sec:'籌碼',id:'margin',name:'上市融資餘額',
+  v:{val:5365.99,chg:31.24,keep:170.67},
+  fields:[['val','融資餘額（億元）'],['chg','較前日增減（億元）'],['keep','大盤融資維持率 %（自動計算）']],
+  main:v=>fmt(v.val,0)+'<small>億</small>',chgTxt:v=>`<span class="n">${v.chg>0?'+':''}${fmt(v.chg)} 億${v.keep!=null?'・維持率 '+fmt(v.keep)+'%':''}</span>`,
+  sig:v=>v.keep&&v.keep<140?['warn','維持率偏低，斷頭風險高']:v.chg<-100?['neu','融資大減，籌碼在清洗']:['neu','融資止穩'],
+  why:'散戶借錢買股的總額。10/6 大盤創高時約 6,376.57 億元，11/6 降到 5,340.53 億元的波段低點。大跌時融資跟著大減，代表浮額被洗掉。維持率由 App 用證交所每檔股票的融資張數 × 收盤價自己算，是近似值，跟其他網站可能差一點。',
+  rule:['維持率 < 140% → 警戒（130% 以下個人帳戶會被追繳）','單日減少超過 100 億 → 籌碼清洗中','其他 → 中性'],
+  src:['證交所、玩股網整理','https://www.twse.com.tw/']},
+
+ {sec:'情緒',id:'fg',name:'MM 恐懼與貪婪',
+  v:{val:9.95,chg:1.95},
+  fields:[['val','指數（0–100）'],['chg','較前次變化']],
+  main:v=>fmt(v.val),chgTxt:v=>`<span class="${cls(v.chg)}">${sgn(v.chg)}</span>`,
+  meter:v=>({p:v.val/100,l:'0 恐懼',r:'貪婪 100'}),
+  sig:v=>v.val<20?['bear','極度恐懼：別跟著恐慌賣']:v.val<40?['bear','恐懼']:v.val<=60?['neu','中性']:v.val<=80?['warn','貪婪：小心追高']:['warn','極度貪婪：最容易追高被套'],
+  why:'財經M平方用股價、跌幅、波動率、寬幅等編製。越低越恐懼，越高越貪婪。極端值常出現在轉折附近，但不能拿來抓精準買點。這個數字要你每週手動填（用上方的「每週填寫」卡片最快）。',
+  rule:['< 20 極度恐懼、20–40 恐懼 → 偏空情緒','40–60 → 中性','> 60 貪婪 → 警戒'],
+  src:['財經M平方（手動填寫）','https://www.macromicro.me/']},
+ {sec:'情緒',id:'mood',name:'台股情緒分數（自算）',
+  v:{val:null,chg:null,parts:[]},
+  fields:[],
+  main:v=>v.val==null?'<span class="n" style="font-size:15px">等第一次自動更新</span>':fmt(v.val,1),chgTxt:v=>v.chg==null?'':`<span class="${cls(v.chg)}">${sgn(v.chg,1)}</span>`,
+  meter:v=>v.val==null?null:({p:v.val/100,l:'0 恐懼',r:'貪婪 100'}),
+  sig:v=>v.val==null?['none','尚未計算']:v.val<20?['bear','極度恐懼']:v.val<40?['bear','恐懼']:v.val<=60?['neu','中性']:v.val<=80?['warn','貪婪：小心追高']:['warn','極度貪婪'],
+  why:'用自動抓到的 6 項資料算出來的 0–100 分，概念跟 MM 恐懼與貪婪指數一樣，但算法是這個 App 自己的，數字不會跟 MM 相同。每一項先換成 0–100 分（越低越恐懼），再取平均；缺資料的項目會跳過。',
+  rule:['股價動能：指數比 125 日均線 −10% → 0 分，+10% → 100 分','距 52 週高點：−20% → 0 分，創高 → 100 分','台指 VIX：40 → 0 分，15 → 100 分','量價：放量上漲加分、放量下跌扣分（跟 20 日均量比）','融資增減：近 5 日 −5% → 0 分，+5% → 100 分','外資買賣：近 5 日合計 −1000 億 → 0 分，+1000 億 → 100 分','< 20 極度恐懼、20–40 恐懼、40–60 中性、> 60 貪婪'],
+  src:['本 App 自動計算','https://www.twse.com.tw/']},
+ {sec:'情緒',id:'vix',name:'台指 VIX',
+  v:{val:null},
+  fields:[['val','台指 VIX'],['chg','較前日變化']],
+  main:v=>v.val==null?'<span class="n" style="font-size:15px">等自動更新</span>':fmt(v.val),chgTxt:v=>v.chg==null?'':`<span class="${cls(v.chg)}">${sgn(v.chg)}</span>`,
+  sig:v=>v.val==null?['none','尚未取得']:v.val>=30?['warn','市場非常緊張']:v.val>=20?['neu','波動偏大']:['bull','市場平穩'],
+  why:'期交所編製的「恐慌指數」，數字越高代表市場預期未來波動越大。每天從期交所網站自動抓；如果抓不到，也可以自己填。',
+  rule:['≥ 30 → 警戒','20–30 → 中性','< 20 → 平穩（偏多）'],src:['臺灣期貨交易所','https://www.taifex.com.tw/']},
+
+ {sec:'國際',id:'sox',name:'費城半導體',
+  v:{val:10146.32,chg:-360.35,pct:-3.43},
+  fields:[['val','收盤'],['chg','漲跌點數'],['pct','漲跌幅 %']],
+  main:v=>fmt(v.val),chgTxt:v=>`<span class="${cls(v.chg)}">${sgn(v.chg)}（${fmt(v.pct)}%）</span>`,
+  sig:v=>v.pct>=1?['bull','半導體走強']:v.pct<=-1?['bear','半導體走弱，台股電子股承壓']:['neu','小漲小跌'],
+  why:'台股電子股占比高，費半是隔天台股的重要前導。美股收盤在台灣清晨，所以這是「今天台股開盤前」的參考。',
+  rule:['漲跌幅 ≥ 1% → 偏多；≤ −1% → 偏空'],src:['鉅亨網、Yahoo股市','https://tw.stock.yahoo.com/quote/%5ESOX']},
+ {sec:'國際',id:'adr',name:'台積電 ADR',
+  v:{val:398.73,chg:-6.76,pct:-1.67,tw:2618.70},
+  fields:[['val','收盤（美元）'],['chg','漲跌（美元）'],['pct','漲跌幅 %'],['tw','折合台股每股（元）']],
+  main:v=>fmt(v.val)+'<small>美元</small>',chgTxt:v=>`<span class="${cls(v.chg)}">${sgn(v.chg)}（${fmt(v.pct)}%）</span>`,
+  sub:v=>v.tw?`折台股 ${fmt(v.tw)} 元・溢價 ${fmt((v.tw/IND[3].cur.val-1)*100,1)}%`:'',
+  sig:v=>v.pct>=1?['bull','台積電開盤可能偏強']:v.pct<=-1?['bear','台積電開盤可能偏弱']:['neu','影響不大'],
+  why:'台積電在紐約掛牌的價格，1 單位 ADR = 5 股台股。台灣晚上就能先看到，用來預估隔天台積電開盤。重點看「漲跌幅」，ADR 長期比台股貴（溢價）是常態。',
+  rule:['漲跌幅 ≥ 1% → 偏多；≤ −1% → 偏空'],src:['中央社（2026/11/14）','https://tw.stock.yahoo.com/quote/TSM']},
+ {sec:'國際',id:'fx',name:'新台幣匯率',
+  v:{val:32.838,chg:-0.051},
+  fields:[['val','1 美元兌新台幣'],['chg','較前日變化（數字變小填負數）']],
+  main:v=>fmt(v.val,3),chgTxt:v=>`<span class="${v.chg<0?'u':v.chg>0?'d':'n'}">${v.chg<0?'台幣升值 ':v.chg>0?'台幣貶值 ':''}${fmt(Math.abs(v.chg*100),1)} 分</span>`,
+  sig:v=>v.chg<=-0.03?['bull','台幣升值，外資可能匯入']:v.chg>=0.03?['bear','台幣貶值，外資可能匯出']:['neu','匯率持平'],
+  why:'台幣升值通常代表外資把美元換成台幣買股；貶值常伴隨外資賣超。',
+  rule:['升值 ≥ 3 分 → 偏多','貶值 ≥ 3 分 → 偏空'],src:['銀行間收盤（方格子整理）','https://tw.stock.yahoo.com/currency-converter']}
+];
+
+let saved=store.get('twdash-v1',{});
+let AUTO=null; // data.json
+const autoTs=()=>AUTO&&AUTO.updatedAt?Date.parse(AUTO.updatedAt):0;
+function overrideOn(i){const s=saved[i.id];if(!s)return false;const a=AUTO&&AUTO.items&&AUTO.items[i.id];return !a||(s.ts||0)>autoTs();}
+function cur(i){const a=AUTO&&AUTO.items&&AUTO.items[i.id];return Object.assign({},i.v,a?a.v:{},overrideOn(i)?saved[i.id].v:{})}
+function dateOf(i){const a=AUTO&&AUTO.items&&AUTO.items[i.id];if(overrideOn(i))return '你輸入（'+saved[i.id].t+'）';if(i.id==='fg')return '11/13 截圖';if(!a&&['vix','mood'].includes(i.id))return '—';return a&&a.date?a.date.slice(5).replace('-','/'):'11/13'}
+
+/* ===== MM 每週填寫入口 ===== */
+const MM_DEFAULT='https://www.macromicro.me/';
+function fillCard(){
+  const c=document.createElement('div');c.className='fill-card';
+  const hist=store.get('twdash-fg-hist',[{d:'2026-11-13',val:9.95}]);
+  const last=hist[hist.length-1];
+  const days=last?Math.floor((Date.now()-Date.parse(last.d+'T12:00:00+08:00'))/86400000):null;
+  const url=store.get('twdash-mm-url',MM_DEFAULT);
+  c.innerHTML=`<h4>📝 每週填寫：MM 恐懼與貪婪指數</h4>
+   <div class="meta">${last?`上次：${last.d.slice(5).replace('-','/')} 填 <b>${last.val}</b>（${days} 天前）`:'還沒填過'}${days!=null&&days>=7?' ・<span class="due">該更新了</span>':''}</div>
+   <a class="go" href="${url}" target="_blank" rel="noopener">① 打開財經M平方看最新數字 ↗</a>
+   <div class="row"><input type="number" inputmode="decimal" step="any" min="0" max="100" placeholder="② 輸入數字 0–100" id="fgQuick"><button class="save" id="fgQuickSave">儲存</button></div>
+   <div id="fgMsg" class="hist" style="display:none"></div>
+   ${hist.length>1?`<div class="hist">紀錄：${hist.slice(-6).map(h=>`${h.d.slice(5).replace('-','/')} ${h.val}`).join(' → ')}</div>`:''}
+   <button class="setlink" id="setMM">${url===MM_DEFAULT?'設定直接連到恐懼與貪婪指數頁面':'修改 MM 連結'}</button>
+   <div id="mmSet" style="display:none;margin-top:6px"><div class="hist" style="margin-top:0">在 MM 網站打開「台灣-MM恐懼與貪婪指數」那頁，複製網址後貼到這裡：</div><div class="row"><input type="url" id="mmUrl" placeholder="https://www.macromicro.me/charts/..." value="${url===MM_DEFAULT?'':url}"><button class="save" id="mmSave">存</button></div></div>`;
+  c.querySelector('#fgQuickSave').onclick=()=>{
+    const el=c.querySelector('#fgQuick'),v=parseFloat(el.value),msg=c.querySelector('#fgMsg');
+    if(!(v>=0&&v<=100)){msg.style.display='block';msg.textContent='請輸入 0 到 100 之間的數字';return}
+    const d=new Date(Date.now()+8*3600e3).toISOString().slice(0,10);
+    const h=hist.filter(x=>x.d!==d);const prev=h.length?h[h.length-1].val:null;h.push({d,val:v});store.set('twdash-fg-hist',h.slice(-30));
+    const dd=new Date();saved.fg={v:{val:v,chg:prev!=null?Math.round((v-prev)*100)/100:null},t:`${dd.getMonth()+1}/${dd.getDate()}`,ts:Date.now()};store.set('twdash-v1',saved);render();
+  };
+  c.querySelector('#setMM').onclick=()=>{const s=c.querySelector('#mmSet');s.style.display=s.style.display==='none'?'block':'none'};
+  c.querySelector('#mmSave').onclick=()=>{const u=c.querySelector('#mmUrl').value.trim();if(u&&!/^https?:\/\//.test(u))return;store.set('twdash-mm-url',u||MM_DEFAULT);render()};
+  return c;
+}
+function partsTable(v){
+  if(!v.parts||!v.parts.length)return '<div class="why">第一次自動更新後，這裡會列出每一項的分數。</div>';
+  return `<div style="font-weight:700;font-size:15px;margin-top:6px">這次怎麼算出來的</div><table class="parts">${v.parts.map(p=>`<tr><td style="width:34%"><b>${p.name}</b></td><td>${p.raw}<div class="bar"><i style="width:${p.score}%"></i></div></td><td style="width:44px;text-align:right;font-weight:700">${p.score}</td></tr>`).join('')}</table>`;
+}
+
+const secNotes={'大盤':'台股本身','籌碼':'誰在買、誰在賣','情緒':'大家多怕、多貪','國際':'週一開盤前參考（美股 11/13 收盤）'};
+function render(){
+  const box=document.getElementById('sections');box.innerHTML='';
+  const tally={bull:0,bear:0,neu:0,warn:0};
+  let lastSec='',grid;
+  IND.forEach(i=>{i.cur=cur(i)});
+  IND.forEach((i,idx)=>{
+    if(i.sec!==lastSec){lastSec=i.sec;const h=document.createElement('h2');h.innerHTML=`${i.sec}<small>${secNotes[i.sec]}</small>`;box.appendChild(h);if(i.sec==='情緒')box.appendChild(fillCard());grid=document.createElement('div');grid.className='grid';box.appendChild(grid);}
+    const v=i.cur,[sc,st]=i.sig(v); if(tally[sc]!=null)tally[sc]++;
+    const t=document.createElement('div');t.className='tile'+(i.wide?' wide':'');
+    let m='';if(i.meter&&i.meter(v)){const mm=i.meter(v);const p=Math.max(0,Math.min(1,mm.p))*100;m=`<div class="meter"><div class="track"><div class="fill" style="width:${p}%"></div><div class="dot" style="left:${p}%"></div></div><div class="ends"><span>${mm.l}</span><span>${mm.r}</span></div></div>`;}
+    t.innerHTML=`${overrideOn(i)?'<span class="mine">你輸入的</span>':`<span class="mine" style="background:none;color:var(--mute)">${dateOf(i)}</span>`}<div class="name">${i.name}</div><div class="val">${i.main(v)}</div><div class="chg">${i.chgTxt(v)}</div>${i.sub?`<div class="sub">${i.sub(v)}</div>`:''}${m}<span class="sig ${S[sc][0]}">${S[sc][1]}</span>`;
+    t.onclick=()=>open(idx);grid.appendChild(t);
+  });
+  document.getElementById('tally').innerHTML=`<span>▲ 偏多 ${tally.bull}</span><span>▼ 偏空 ${tally.bear}</span><span>● 中性 ${tally.neu}</span><span>⚠ 警戒 ${tally.warn}</span>`;
+  const tx=IND.find(x=>x.id==='taiex');
+  const d=AUTO&&AUTO.items&&AUTO.items.taiex?AUTO.items.taiex.date:'2026-11-13';
+  let up='';if(AUTO&&AUTO.updatedAt){const u=new Date(AUTO.updatedAt);up=`・自動更新於 ${u.getMonth()+1}/${u.getDate()} ${String(u.getHours()).padStart(2,'0')}:${String(u.getMinutes()).padStart(2,'0')}`}
+  document.getElementById('asof').textContent=`台股資料日期 ${d.replace(/-/g,'/')}${up}・點卡片看解讀`;
+  hero();
+}
+function hero(){
+  const g=id=>IND.find(x=>x.id===id).cur;
+  const t=g('taiex'),fg0=g('fg'),mood=g('mood'),f=g('foreign'),sox=g('sox'),m=g('margin');
+  const fg=mood.val!=null?mood:fg0;
+  const off=(t.val/t.hi-1)*100;
+  let a=off<-20?'大盤 <b>從高點跌超過 20%，處於空頭修正</b>':off<-10?'大盤 <b>從高點回檔 '+Math.abs(off).toFixed(0)+'%</b>':off<-3?'大盤 <b>在高檔附近整理</b>':'大盤 <b>接近 52 週高點</b>';
+  a+=t.pct>=0.5?'，今天上漲。':t.pct<=-0.5?'，今天下跌。':'，今天變化不大。';
+  let moodTxt=fg.val==null?'':fg.val<20?'情緒「極度恐懼」':fg.val<40?'情緒偏恐懼':fg.val<=60?'情緒中性':fg.val<=80?'情緒偏貪婪':'情緒「極度貪婪」';
+  let b=[];
+  if(moodTxt)b.push(moodTxt);
+  if(f.val!=null)b.push(f.val>=50?'外資買超':f.val<=-50?'外資賣超':'外資買賣不大');
+  if(m.chg!=null&&m.chg<-100)b.push('融資大減');
+  let c='';if(sox.pct!=null)c=sox.pct<=-1?'美股費半下跌 '+Math.abs(sox.pct).toFixed(1)+'%，下個交易日開盤可能有壓力。':sox.pct>=1?'美股費半上漲 '+sox.pct.toFixed(1)+'%，有助下個交易日開盤。':'美股費半變化不大。';
+  let adv=fg.val!=null&&fg.val<25?'照原計畫定期定額，不恐慌賣':fg.val!=null&&fg.val>75?'不追高，先不加碼':'照原計畫走，不追高也不殺低';
+  document.getElementById('heroTxt').innerHTML=`${a}${b.length?b.join('、')+'。':''}${c}<br>新手：<b>${adv}</b>。`;
+}
+
+const sheet=document.getElementById('sheet'),scrim=document.getElementById('scrim');
+function close(){sheet.classList.remove('on');scrim.classList.remove('on')}
+scrim.onclick=close;
+function open(idx){
+  const i=IND[idx],v=i.cur,[sc,st]=i.sig(v);
+  sheet.innerHTML=`<div class="grab"></div><h3>${i.name}</h3>
+  <span class="sig ${S[sc][0]}">${S[sc][1]}</span> <span style="font-size:13.5px;color:var(--ink2)">${st}</span>
+  <div class="why">${i.why}</div>
+  <div class="rule"><b>燈號規則</b><ul style="padding-left:18px;margin:4px 0">${i.rule.map(r=>`<li>${r}</li>`).join('')}</ul></div>
+  ${i.id==='mood'?partsTable(v):''}
+  ${i.fields.length?`<div style="margin-top:14px;font-weight:700;font-size:15px">手動輸入</div><div style="font-size:12.5px;color:var(--mute)">${i.id==='fg'?'這個指標要自己填。':'會自動更新；手動輸入的數字在下次自動更新後會被取代。'}</div>`:''}
+  ${i.fields.map(([k,l])=>`<label>${l}</label><input data-k="${k}" ${k==='note'?'type="text"':'type="number" step="any" inputmode="decimal"'} value="${v[k]==null?'':v[k]}">`).join('')}
+  <div class="btns">${i.fields.length?'<button class="btn" id="save">儲存</button>':''}${saved[i.id]?'<button class="btn ghost" id="undo">改回自動</button>':''}<button class="btn ghost" id="cls">關閉</button></div>
+  <div class="src">資料日期：${dateOf(i)}・來源：${i.src[0]}・<a href="${i.src[1]}" target="_blank" rel="noopener">去查最新數字 ↗</a></div>`;
+  sheet.classList.add('on');scrim.classList.add('on');sheet.scrollTop=0;
+  sheet.querySelector('#cls').onclick=close;
+  const sv=sheet.querySelector('#save'); if(sv) sv.onclick=()=>{
+    const nv={};sheet.querySelectorAll('input').forEach(inp=>{const k=inp.dataset.k;if(k==='note')nv[k]=inp.value;else nv[k]=inp.value===''?null:Number(inp.value)});
+    const d=new Date();saved[i.id]={v:nv,t:`${d.getMonth()+1}/${d.getDate()}`,ts:Date.now()};store.set('twdash-v1',saved);render();close();
+  };
+  const u=sheet.querySelector('#undo');if(u)u.onclick=()=>{delete saved[i.id];store.set('twdash-v1',saved);render();close()};
+}
+document.getElementById('resetAll').onclick=()=>{saved={};store.del('twdash-v1');render()};
+render();
+fetch('data.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(j&&j.items){AUTO=j;render()}}).catch(()=>{});
+})();
+</script>
+</body>
+</html>
